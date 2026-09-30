@@ -1,32 +1,27 @@
-# 한자 티어 · Hanja Tier
+# 한자 티어
 
-한자 8급부터 6급까지 자율학습하는 설치형 웹앱입니다.
+한자 8급부터 6급까지 누적 300자를 익히는 한자 전용 설치형 웹앱입니다.
 
-- 사이트: https://dew978.github.io/hanja-tier/
-- 공개 저장소: https://github.com/dew978/hanja-tier
-- 기존 `class-tier`와 별도의 저장소, 앱 설치 범위, Firebase 프로젝트를 사용합니다.
+**접속:** https://dew978.github.io/hanja-tier/
 
-## 학습
+- 뜻·음과 한자어 5개, 따라쓰기 학습
+- 최초 실력 진단 30문항, 하루 최대 20자
+- 일일 확인 90% 이상: +5·10·15점 (하루 한 번)
+- 승급 시험 80% 이상: 최초 승급마다 +100점
+- 발전도·절대 진도의 두 가지 순위
+- 관리자는 한자 학습 현황·학생 관리·학습 설정만 제공
+- GitHub Pages와 전용 Firebase 프로젝트 `hanja-tier` 사용
 
-- 첫 실력 평가: 뜻·음 랜덤 30문제
-- 하루 학습: 20자 이내, 뜻·음·따라쓰기와 한자별 단어 5개
-- 오늘 확인 시험: 90% 이상이면 하루 한 번 +5 / +10 / +15점
-- 승급 시험: 80% 이상이면 급수별 첫 합격에 +100점
-- 발전도와 절대 진도 순위를 별도로 표시
-- 획순 문제 없음
+운영 규칙은 [HANJA_GUIDE.md](HANJA_GUIDE.md), 배포 방법은 [GITHUB_DEPLOY.md](GITHUB_DEPLOY.md)를 참고하세요.
 
-자세한 학습 규칙은 [HANJA_GUIDE.md](HANJA_GUIDE.md)를 참고하세요.
+## 로컬 확인
 
-## 접속과 설치
+`serve.ps1`을 실행한 뒤 `http://localhost:8767/preview.html`에 접속합니다. 체험 학생으로 자동 로그인되며, 체험 관리자 계정은 `teacher / demo-only`입니다. 모두 가상 데이터입니다. 실제 계정 비밀번호는 소스에 저장하지 않습니다.
 
-사이트를 Chrome, Edge 또는 Safari에서 열고 앱 설치 안내를 따릅니다. 로그인과 학습 기록 저장에는 인터넷 연결이 필요합니다. PC에서 HTML 파일을 직접 여는 방식은 지원하지 않습니다.
+## 검증
 
-## 관리자
-
-운영 관리자 `master`의 생성과 실제 로그인을 확인했습니다. 비밀번호는 공개 소스에 저장하지 않습니다. 기존 class-tier의 관리자와 학생 계정을 복사하지 않습니다.
-
-## 배포
-
-GitHub Pages의 소스는 GitHub Actions입니다. `main`에 반영하면 학습·저장·PWA 검사를 거쳐 배포합니다. 웹 파일만 게시하며, 체험 데이터와 설명서·관리자 등록 도구는 게시 대상에서 제외합니다.
-
-Firebase 프로젝트는 `hanja-tier`이며, 규칙 원본은 `database.rules.json`입니다. 규칙을 변경할 때는 새 프로젝트에만 적용하세요.
+```sh
+node tests/hanja.test.cjs
+node tests/hanja-storage.test.cjs
+node tests/pwa.test.cjs
+```

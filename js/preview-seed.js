@@ -1,6 +1,6 @@
 /* Local preview only: no Firebase connection; all names and records are fictional. */
-window.CLASSTIER_FIREBASE_CONFIG = null;
-window.CLASS_TIER_DEMO_NAMESPACE = 'hanjaPreview_v2';
+window.HANJA_FIREBASE_CONFIG = null;
+window.HANJA_DEMO_NAMESPACE = 'hanjaPreview_v2';
 (function () {
   const key='hanjaPreview_v2';
   if(!localStorage.getItem(key+'DB')){

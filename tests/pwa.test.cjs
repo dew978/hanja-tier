@@ -7,10 +7,18 @@ const read = name => fs.readFileSync(path.join(root, name), 'utf8');
 
 async function main() {
   const manifest = JSON.parse(read('manifest.webmanifest'));
-  const scope = 'https://school.example/class-tier/';
+  const scope = 'https://school.example/hanja-tier/';
   assert.equal(new URL(manifest.scope, scope).href, scope);
   assert.equal(new URL(manifest.start_url, scope).href, scope + 'index.html');
   assert.equal(manifest.display, 'standalone');
+  assert.equal(manifest.name, '한자 티어');
+  const index=read('index.html');
+  const scriptFiles=[...index.matchAll(/src="(js\/[^"]+)"/g)].map(m=>m[1]);
+  assert.deepEqual(scriptFiles,['js/firebase-config.js','js/hanja.js','js/hanja-engine.js','js/backend.js','js/hanja-app.js','js/hanja-learning.js','js/hanja-admin.js']);
+  for(const name of ['app','teacher','tier','tracks','econ','econ-student','econ-teacher','board','quest','media','prices','importer','xlsx-lite'])assert.equal(fs.existsSync(path.join(root,'js',name+'.js')),false,'Unrelated module remains: '+name);
+  const ui=index+read('js/hanja-app.js')+read('js/hanja-admin.js')+read('js/hanja-learning.js');
+  assert.doesNotMatch(ui,/경제|퀘스트|리코더|타자|생활 티어|entries\//);
+  assert.deepEqual(Object.keys(JSON.parse(read('database.rules.json')).rules).sort(),['config','hanja','hanjaRanks','users']);
   assert.equal(manifest.prefer_related_applications, false);
   for (const icon of manifest.icons) {
     const bytes = fs.readFileSync(path.join(root, icon.src));
@@ -24,7 +32,7 @@ async function main() {
   assert.match(read('index.html'), /rel="manifest"[^>]*href="manifest.webmanifest"/);
 
   const handlers = {}, entries = new Map(), deleted = [];
-  const cacheName = 'hanja-tier-pwa:/class-tier/:v3';
+  const cacheName = 'hanja-tier-pwa:/hanja-tier/:v4';
   let online = true, fetched = 0, claimed = false;
   const response = label => ({ ok: true, label, clone() { return response(label); } });
   const normalize = request => new URL(typeof request === 'string' ? request : request.url, scope).href;
@@ -47,7 +55,7 @@ async function main() {
     self: { registration: { scope }, clients: { async claim() { claimed = true; } }, addEventListener(type, callback) { handlers[type] = callback; } },
     caches: {
       async open(name) { assert.equal(name, cacheName); return cache; },
-      async keys() { return [cacheName, 'hanja-tier-pwa:/class-tier/:v2', 'hanja-tier-pwa:/another-class/:v2', 'unrelated']; },
+      async keys() { return [cacheName, 'hanja-tier-pwa:/hanja-tier/:v2', 'hanja-tier-pwa:/another-class/:v2', 'unrelated']; },
       async delete(name) { deleted.push(name); }
     },
     async fetch(request) { fetched++; if (!online) throw new Error('offline'); return response(request.url); }
@@ -57,22 +65,22 @@ async function main() {
   await pending;
   handlers.activate({ waitUntil(promise) { pending = promise; } });
   await pending;
-  assert.deepEqual(deleted, ['hanja-tier-pwa:/class-tier/:v2']);
+  assert.deepEqual(deleted, ['hanja-tier-pwa:/hanja-tier/:v2']);
   assert.ok(claimed);
 
   const request = (url, mode = 'cors', method = 'GET') => ({ url, mode, method });
   const dispatch = req => { let result; handlers.fetch({ request: req, respondWith(promise) { result = promise; } }); return result; };
   assert.equal(dispatch(request('https://firebase.example/private.json')), undefined);
   assert.equal(dispatch(request(scope + 'private.json')), undefined);
-  assert.equal(dispatch(request(scope + 'js/app.js', 'cors', 'POST')), undefined);
+  assert.equal(dispatch(request(scope + 'js/hanja-app.js', 'cors', 'POST')), undefined);
   assert.equal(dispatch(request('https://school.example/another-class/index.html', 'navigate')), undefined);
   assert.equal(dispatch(request(scope + 'js/preview-seed.js')), undefined);
   assert.equal(fetched, 0);
-  const asset = await dispatch(request(scope + 'js/app.js'));
-  assert.equal(asset.label, scope + 'js/app.js');
+  const asset = await dispatch(request(scope + 'js/hanja-app.js'));
+  assert.equal(asset.label, scope + 'js/hanja-app.js');
   online = false;
   assert.equal((await dispatch(request(scope + 'index.html', 'navigate'))).label, './offline.html');
-  assert.equal((await dispatch(request(scope + 'js/app.js?v=new'))).label, scope + 'js/app.js');
+  assert.equal((await dispatch(request(scope + 'js/hanja-app.js?v=new'))).label, scope + 'js/hanja-app.js');
   console.log('PASS: manifest, icon dimensions, nested Pages path, scoped cache, offline fallback, private-request exclusion');
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

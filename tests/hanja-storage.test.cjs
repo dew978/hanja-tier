@@ -1,7 +1,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const root=path.resolve(__dirname,'..');
 const storage=()=>{const m=new Map();return{getItem:k=>m.get(k)||null,setItem:(k,v)=>m.set(k,v),removeItem:k=>m.delete(k)}};
-global.window={addEventListener(){},CLASSTIER_FIREBASE_CONFIG:null};
+global.window={addEventListener(){},HANJA_FIREBASE_CONFIG:null};
 global.localStorage=storage();global.sessionStorage=storage();
 const now=Date.parse('2026-10-03T12:00:00Z'); // Saturday night in Korea: autonomous learning must work.
 Date.now=()=>now;
@@ -9,8 +9,8 @@ const rules=JSON.parse(fs.readFileSync(path.join(root,'database.rules.json'),'ut
 global.fetch=async()=>({ok:true,json:async()=>rules});
 localStorage.setItem('hanjaTierDemoDB_v1',JSON.stringify({config:{teacher:'t'},users:{u:{name:'test'},other:{name:'other'}}}));
 sessionStorage.setItem('hanjaTierDemoUid','u');
-for(const file of ['hanja.js','hanja-engine.js','tier.js','backend.js']) vm.runInThisContext(fs.readFileSync(path.join(root,'js',file),'utf8'),{filename:file});
-const B=window.Backend,E=window.HanjaEngine,H=window.Hanja,T=window.Tier;
+for(const file of ['hanja.js','hanja-engine.js','backend.js']) vm.runInThisContext(fs.readFileSync(path.join(root,'js',file),'utf8'),{filename:file});
+const B=window.Backend,E=window.HanjaEngine,H=window.Hanja;
 const getdb=()=>JSON.parse(localStorage.getItem('hanjaTierDemoDB_v1'));
 (async()=>{
  await B.init();let p=E.profile();p.baselinePlan=E.diagnostic();p.baseline={right:10,total:30,ts:now};await B.set('hanja/u',p);
@@ -19,11 +19,9 @@ const getdb=()=>JSON.parse(localStorage.getItem('hanjaTierDemoDB_v1'));
  const qs=E.dailyItems(p.days[day]),answers=qs.map(q=>H.BY[q.h][q.type]);
  const r=await B.tx('hanja/u',raw=>E.finishDaily(raw,day,qs,answers,now).p);assert.equal(r.value.score,1005);
  await B.set('hanjaRanks/u',E.summary(r.value));
- const daily={cat:'hanjaDaily',text:'test',date:day,points:5,ts:now,month:day.slice(0,7),by:'system',status:'approved',hanjaVersion:2};
- await B.set('entries/u/hd-'+day,daily);
- assert.equal(getdb().entries.u['hd-'+day].points,5);
- await assert.rejects(()=>B.set('entries/u/hd-'+day,daily));
- await assert.rejects(()=>B.set('entries/u/hd-other',{...daily,points:15}));
+ // Removed modules have no writable paths, including for a registered student.
+ for(const path of ['entries/u/legacy','acct/u/cash','quests/u','levels/u/typing'])await assert.rejects(()=>B.set(path,1));
+ await assert.rejects(()=>B.get('hanja/other'));
  await assert.rejects(()=>B.set('hanjaRanks/other',E.summary(r.value)));
  await assert.rejects(()=>B.set('hanjaRanks/u',{...E.summary(r.value),score:9999}));
  await assert.rejects(()=>B.set('hanja/u/baseline/right',0));
@@ -33,9 +31,7 @@ const getdb=()=>JSON.parse(localStorage.getItem('hanjaTierDemoDB_v1'));
  const exam=E.examItems(0,30),as=exam.map(q=>H.BY[q.h][q.type]);
  const up=await B.tx('hanja/u',raw=>E.finishExam(raw,0,exam,as,now).p);
  assert.equal(up.value.score,1105);
- const promote={cat:'lvHanja',text:'test',level:1,points:100,ts:now,month:day.slice(0,7),by:'system',status:'approved',hanjaVersion:2};
- await B.set('entries/u/hl-1',promote);
- const db=getdb(),computed=T.compute(day.slice(0,7),db.users,{},db.entries,{cats:{hanjaDaily:{points:1,cap:1},lvHanja:{points:10,cap:1}}});
- assert.equal(computed.scores.u,1105);
- console.log('PASS compiled rules: self-study weekend, profile transaction, public summary, daily and promotion entries, duplicate denial, cross-user denial, baseline and daily-pool immutability, legacy-config score integration');
+ await B.set('hanjaRanks/u',E.summary(up.value));
+ assert.equal((await B.get('hanjaRanks')).u.score,1105);
+ console.log('PASS Hanja-only storage: daily/promotion rewards, separate rankings, fixed baseline/day pool, cross-user denial, unrelated paths denied');
 })().catch(e=>{console.error(e);process.exitCode=1;});

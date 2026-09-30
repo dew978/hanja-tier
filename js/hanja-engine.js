@@ -11,6 +11,10 @@
     for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
     return a;
   };
+  function tierOf(score) {
+    for (const [id,name] of [['diamond','다이아'],['platinum','플래티넘'],['gold','골드'],['silver','실버']]) if(score>=THRESHOLDS[id])return {id,name};
+    return {id:'bronze',name:'브론즈'};
+  }
   function profile(raw) {
     const p = Object.assign({ learned: 0, level: 0, days: {}, promotions: {}, mastered: {}, score: START }, clone(raw || {}));
     p.learned = Math.max(0, Math.min(300, Number(p.learned) || 0));
@@ -103,5 +107,5 @@
     rows.forEach((r, i) => { r.rank = i && cmp(r, rows[i - 1]) === 0 ? rows[i - 1].rank : i + 1; });
     return rows;
   }
-  window.HanjaEngine = { START, DAILY_LIMIT, TEST_COUNTS, THRESHOLDS, day, shuffle, profile, question, diagnostic, dailyPlan, dailyItems, examItems, grade, finishDaily, finishExam, summary, ranking };
+  window.HanjaEngine = {tierOf, START, DAILY_LIMIT, TEST_COUNTS, THRESHOLDS, day, shuffle, profile, question, diagnostic, dailyPlan, dailyItems, examItems, grade, finishDaily, finishExam, summary, ranking };
 })();

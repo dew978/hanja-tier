@@ -1,7 +1,7 @@
 /* 데이터 계층: Firebase(실제 운영) / 데모(이 브라우저 localStorage, 여러 탭 테스트 가능)
    두 구현 모두 같은 인터페이스를 제공합니다.
    데모 모드는 database.rules.json을 직접 해석해 실제 Firebase와 같은 보안 규칙으로 읽기·쓰기를 검사합니다.
-   - inc(n): 서버에서 더하기(동시에 여러 명이 돈을 써도 잔액이 꼬이지 않음)
+   - inc(n): 서버에서 더하기(동시에 갱신해도 합계 유지)
    - ts(): 서버 시각
    - get/on의 세 번째 인자 q: { child, key, equalTo, startAt, endAt, last, first } 조건 조회 */
 (function () {
@@ -218,9 +218,9 @@
 
   /* ───────────── 데모 백엔드 ───────────── */
   function DemoBackend() {
-    const KEY = window.CLASS_TIER_DEMO_NAMESPACE ? window.CLASS_TIER_DEMO_NAMESPACE + 'DB' : 'hanjaTierDemoDB_v1';
-    const AUTH_KEY = window.CLASS_TIER_DEMO_NAMESPACE ? window.CLASS_TIER_DEMO_NAMESPACE + 'Auth' : 'hanjaTierDemoAuth_v1';
-    const SESSION_KEY = window.CLASS_TIER_DEMO_NAMESPACE ? window.CLASS_TIER_DEMO_NAMESPACE + 'Uid' : 'hanjaTierDemoUid';
+    const KEY = window.HANJA_DEMO_NAMESPACE ? window.HANJA_DEMO_NAMESPACE + 'DB' : 'hanjaTierDemoDB_v1';
+    const AUTH_KEY = window.HANJA_DEMO_NAMESPACE ? window.HANJA_DEMO_NAMESPACE + 'Auth' : 'hanjaTierDemoAuth_v1';
+    const SESSION_KEY = window.HANJA_DEMO_NAMESPACE ? window.HANJA_DEMO_NAMESPACE + 'Uid' : 'hanjaTierDemoUid';
     const listeners = new Set();
     let authCbs = [];
     let rules = null;
@@ -566,5 +566,5 @@
     return api;
   }
 
-  window.Backend = window.CLASSTIER_FIREBASE_CONFIG ? FirebaseBackend(window.CLASSTIER_FIREBASE_CONFIG) : DemoBackend();
+  window.Backend = window.HANJA_FIREBASE_CONFIG ? FirebaseBackend(window.HANJA_FIREBASE_CONFIG) : DemoBackend();
 })();

@@ -1,6 +1,6 @@
 /* 자율학습: 최초 진단 → 뜻·음·따라쓰기 → 오늘 확인 → 급수 승급. */
 (function () {
-  const A = window.App, { S, B, T, $, esc, toast } = A;
+  const A = window.App, { S, B, $, esc, toast } = A;
   const H = window.Hanja, E = window.HanjaEngine;
   let session = null, lastKey = '', rankTrack = 'growth', busy = false;
   const p = () => E.profile(S.hanja);
@@ -21,16 +21,6 @@
   }
   async function publish(uid, raw) {
     await B.set('hanjaRanks/' + uid, E.summary(raw));
-    // The profile transaction owns the reward. Entries are retryable projections.
-    const jobs = [];
-    for (const [d, plan] of Object.entries(raw.days || {})) if (plan.done) jobs.push({ id: 'hd-' + d, cat: 'hanjaDaily', ts: plan.completedAt, points: plan.reward, date: d, text: `한자 자율학습 ${plan.chars} · ${plan.completedRight}/${plan.total}` });
-    for (const [lv, rec] of Object.entries(raw.promotions || {})) jobs.push({ id: 'hl-' + lv, cat: 'lvHanja', ts: rec.ts, points: 100, level: Number(lv), text: `${H.LEVELS[Number(lv) - 1]} 승급 · ${rec.right}/${rec.total}` });
-    for (const job of jobs) {
-      const { id, ...entry } = job;
-      if (await B.get(`entries/${uid}/${id}`)) continue;
-      try { await B.set(`entries/${uid}/${id}`, { ...entry, month: E.day(entry.ts).slice(0, 7), by: 'system', status: 'approved', hanjaVersion: 2 }); }
-      catch (e) { if (!(await B.get(`entries/${uid}/${id}`))) throw e; }
-    }
   }
   function rankingHtml() {
     const rows = E.ranking(S.users || {}, S.hanjaRanks || {}, rankTrack);
@@ -42,7 +32,7 @@
   function home(main) {
     const v = p(), s = E.summary(v), d = v.days[date()], next = E.dailyPlan(v, B.now(), A.settings().hanja.daily);
     const canExam = v.baseline && v.level < 5 && v.learned >= H.BOUNDS[v.level];
-    const tier = T.tierOf(v.score, E.THRESHOLDS);
+    const tier = E.tierOf(v.score);
     const readyRecheck = v.baseline && B.now() - (v.assessment || v.baseline).ts >= 7 * 86400000;
     main.innerHTML = `<div class="panel hj-banner"><span class="month-pill">한자 자율학습 · 8급부터 6급까지</span><h2>매일 조금씩, 나만의 속도로</h2><p>뜻을 알고, 소리를 읽고, 손으로 익혀요.</p>
       <div class="hj-stats"><div><small>한자 티어</small><strong>${tier.name}</strong><span>${v.score}점</span></div><div><small>통과 급수</small><strong>${levelName(v.level)}</strong><span>5단계 중 ${v.level}단계</span></div><div><small>학습 진도</small><strong>${v.learned}<small> / 300자</small></strong><span>뜻·음 확인 ${s.mastered}자</span></div><div><small>처음보다 성장</small><strong>${v.assessment ? (s.growth >= 0 ? '+' : '') + s.growth + '문항' : '측정 준비'}</strong><span>${v.baseline ? '처음 ' + v.baseline.right + '/30문항' : '첫 실력 확인부터 시작해요'}</span></div></div>
@@ -138,5 +128,5 @@
   }
   let syncKey='';
   function sync() {if(!S.uid||S.isTeacher||!p().baseline)return;const key=S.uid+JSON.stringify(E.summary(p()));if(key===syncKey)return;syncKey=key;publish(S.uid,p()).catch(()=>{syncKey='';});}
-  window.HanjaStudy={render(main){render(main);sync();},reset(){session=null;lastKey='';syncKey='';busy=false;rankTrack='growth';}};
+  window.HanjaStudy={viewChar,render(main){render(main);sync();},reset(){session=null;lastKey='';syncKey='';busy=false;rankTrack='growth';}};
 })();

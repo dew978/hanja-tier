@@ -1,7 +1,7 @@
 const assert = require('node:assert/strict');
 global.window = {};
-require('../js/hanja.js'); require('../js/hanja-engine.js'); require('../js/tier.js');
-const H=window.Hanja,E=window.HanjaEngine,T=window.Tier;
+require('../js/hanja.js'); require('../js/hanja-engine.js');
+const H=window.Hanja,E=window.HanjaEngine;
 const ts=Date.parse('2026-09-30T03:00:00Z'), day=E.day(ts);
 let tests=0;
 function test(name,fn){fn();tests++;console.log('PASS',name);}
@@ -44,6 +44,6 @@ test('progress rankings are separate; ties share rank',()=>{
  data.a.hasRecheck=false;assert.equal(E.ranking(users,data,'growth').length,2);
 });
 test('legacy progress is retained; first diagnostic does not grant mastery',()=>{const p=E.profile({learned:150,level:3});assert.equal(p.learned,150);assert.equal(p.level,3);assert.equal(p.score,1000);p.baseline={right:30,total:30,ts};assert.equal(E.summary(p).mastered,0);});
-test('legacy settings migrate to self-study and always clamp daily limit',()=>{const old=T.mergeSettings({hanja:{daily:5,days:[1],testCount:[20,20,20]}});assert.equal(old.hanja.daily,20);assert.equal(old.hanja.testCount.length,5);assert.equal(T.mergeSettings({hanja:{version:2,daily:999}}).hanja.daily,20);});
+test('Hanja-only tier boundaries',()=>{for(const [score,id] of [[1000,'bronze'],[1099,'bronze'],[1100,'silver'],[1249,'silver'],[1250,'gold'],[1449,'gold'],[1450,'platinum'],[1699,'platinum'],[1700,'diamond']])assert.equal(E.tierOf(score).id,id);});
 test('meaning and reading aliases accept whitespace and common variants',()=>{assert.equal(E.grade([{h:'地',type:'hun'},{h:'女',type:'eum'}],[' 땅 ','여']).right,2);});
 console.log(`${tests} test groups passed`);

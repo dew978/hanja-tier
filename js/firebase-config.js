@@ -1,7 +1,6 @@
-window.CLASSTIER_GOOGLE_ENABLED = false;
 /* Hanja Tier: dedicated Firebase project; no connection to class-tier data. */
-window.CLASS_TIER_DEMO_NAMESPACE = 'hanjaTierDemo_v1';
-window.CLASSTIER_FIREBASE_CONFIG = {
+window.HANJA_DEMO_NAMESPACE = 'hanjaTierDemo_v1';
+window.HANJA_FIREBASE_CONFIG = {
   apiKey: "AIzaSyDpc4uF98tz_kFhLgXqkx1_O0UzjZ1Y8Sc",
   authDomain: "hanja-tier.firebaseapp.com",
   databaseURL: "https://hanja-tier-default-rtdb.asia-southeast1.firebasedatabase.app",

@@ -1,7 +1,7 @@
 {
   "name": "한자 자율학습 체험",
   "short_name": "한자 체험",
-  "description": "우리 반 생활 티어 · 한자 6급 자율학습 · 학급 경제 · 퀘스트",
+  "description": "한자 8급부터 6급까지 뜻·음·따라쓰기 체험",
   "lang": "ko",
   "id": "./preview.html",
   "start_url": "./preview.html",
