@@ -1,3 +1,4 @@
+window.CLASSTIER_GOOGLE_ENABLED = false;
 /* Hanja Tier: dedicated Firebase project; no connection to class-tier data. */
 window.CLASS_TIER_DEMO_NAMESPACE = 'hanjaTierDemo_v1';
 window.CLASSTIER_FIREBASE_CONFIG = {

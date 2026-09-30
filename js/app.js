@@ -120,7 +120,7 @@
   async function boot() {
     try { await B.init(); } catch (e) { $('#loading-msg').textContent = e.message; return; }
     if (B.mode === 'demo') $('#demo-note').classList.remove('hidden');
-    if (B.google) $$('.google-only').forEach((x) => x.classList.remove('hidden'));
+    if (B.google && window.CLASSTIER_GOOGLE_ENABLED !== false) $$('.google-only').forEach((x) => x.classList.remove('hidden'));
     $('#login-logo').innerHTML = emblem('champion');
     $('#setup-logo').innerHTML = emblem('gold');
     B.onAuth(async (uid) => {
