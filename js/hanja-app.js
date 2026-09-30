@@ -25,8 +25,7 @@
     return new Promise(resolve=>{let yes=false;const m=modal(`<h3>${esc(title)}</h3><p>${msg}</p><div class="foot"><button class="btn" data-close>취소</button><button class="btn primary" data-ok>${esc(ok)}</button></div>`,{onClose:()=>resolve(yes)});m.el.querySelector('[data-ok]').onclick=()=>{yes=true;m.close();};});
   }
   function settings() {
-    const raw=S.config.settings?.hanja;
-    return {hanja:{daily:raw?.version===2?Math.max(1,Math.min(20,Math.floor(Number(raw.daily)||20))):20,testCount:E.TEST_COUNTS.slice()}};
+    return {hanja:{daily:E.DAILY_LIMIT,testCount:E.TEST_COUNTS.slice()}};
   }
   function show(name) {document.querySelectorAll('.screen').forEach(el=>el.classList.toggle('hidden',el.id!=='scr-'+name));S.screen=name;}
   function render() {

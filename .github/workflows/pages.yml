@@ -25,13 +25,14 @@ jobs:
         run: |
           node tests/hanja.test.cjs
           node tests/hanja-storage.test.cjs
+          node tests/stroke-practice.test.cjs
           node tests/pwa.test.cjs
       - uses: actions/configure-pages@v5
       - name: 공개 웹 파일만 준비
         run: |
           mkdir _site
           cp index.html offline.html manifest.webmanifest sw.js .nojekyll _site/
-          cp -R css icons js _site/
+          cp -R css icons js fonts licenses _site/
           rm _site/js/preview-seed.js
       - uses: actions/upload-pages-artifact@v3
         with:

@@ -15,17 +15,32 @@ const getdb=()=>JSON.parse(localStorage.getItem('hanjaTierDemoDB_v1'));
 (async()=>{
  await B.init();let p=E.profile();p.baselinePlan=E.diagnostic();p.baseline={right:10,total:30,ts:now};await B.set('hanja/u',p);
  await B.set('hanjaRanks/u',E.summary(p));assert.equal((await B.get('hanjaRanks')).u.baseline,10);
- const day=E.day(now);p.days[day]=E.dailyPlan(p,now);await B.set('hanja/u',p);
- const qs=E.dailyItems(p.days[day]),answers=qs.map(q=>H.BY[q.h][q.type]);
- const r=await B.tx('hanja/u',raw=>E.finishDaily(raw,day,qs,answers,now).p);assert.equal(r.value.score,1005);
- await B.set('hanjaRanks/u',E.summary(r.value));
+ const day=E.day(now);p=E.ensurePlan(p,now);await B.set('hanja/u',p);
+ const dailyPath='hanja/u/studyDays/'+day;
+ await assert.rejects(()=>B.set(dailyPath+'/done',true));
+ await assert.rejects(()=>B.set(dailyPath+'/batches/0',{passed:true,right:3,total:5,ts:now}));
+ await assert.rejects(()=>B.set(dailyPath+'/batches/1',{passed:true,right:5,total:5,ts:now}));
+ const h0=E.batchChars(p.studyDays[day],0)[0],h1=E.batchChars(p.studyDays[day],1)[0];
+ await assert.rejects(()=>B.set(dailyPath+'/practice/'+h0,{count:1,ts:now}));
+ await assert.rejects(()=>B.set(dailyPath+'/practice/'+h1,{count:2,ts:now}));
+ for(let index=0;index<2;index++){
+   for(const h of E.batchChars(p.studyDays[day],index))await B.tx('hanja/u',raw=>E.recordPractice(raw,day,index,h,now));
+   const qs=E.dailyItems(p.studyDays[day],index),as=qs.map(q=>({hun:H.BY[q.h].hun,eum:H.BY[q.h].eum}));
+   p=(await B.tx('hanja/u',raw=>E.finishBatch(raw,day,index,qs,as,now).p)).value;
+   assert.equal(p.score,index?1005:1000);
+ }
+ const r={value:p};assert.equal(p.learned,10);assert(p.studyDays[day].done);
+ await assert.rejects(()=>B.set(dailyPath+'/batches/0',null));
+ await assert.rejects(()=>B.set(dailyPath+'/done',false));
+ await assert.rejects(()=>B.set(dailyPath+'/practice/'+h0,null));
+ await B.set('hanjaRanks/u',E.summary(p));
  // Removed modules have no writable paths, including for a registered student.
  for(const path of ['entries/u/legacy','acct/u/cash','quests/u','levels/u/typing'])await assert.rejects(()=>B.set(path,1));
  await assert.rejects(()=>B.get('hanja/other'));
  await assert.rejects(()=>B.set('hanjaRanks/other',E.summary(r.value)));
  await assert.rejects(()=>B.set('hanjaRanks/u',{...E.summary(r.value),score:9999}));
  await assert.rejects(()=>B.set('hanja/u/baseline/right',0));
- await assert.rejects(()=>B.set('hanja/u/days/'+day+'/chars','一'));
+ await assert.rejects(()=>B.set(dailyPath+'/chars','一'));
  // A completed old-profile migration and earned promotion work with compiled rules.
  p=r.value;p.learned=50;await B.set('hanja/u',p);
  const exam=E.examItems(0,30),as=exam.map(q=>H.BY[q.h][q.type]);

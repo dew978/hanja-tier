@@ -1,7 +1,7 @@
 /* Pure learning rules: independent of UI and storage. */
 (function () {
   const H = window.Hanja;
-  const START = 1000, DAILY_LIMIT = 20;
+  const START = 1000, DAILY_LIMIT = 10, BATCH_SIZE = 5, PRACTICE_COUNT = 2;
   const TEST_COUNTS = [30, 40, 50, 60, 60];
   const THRESHOLDS = { silver: 1100, gold: 1250, platinum: 1450, diamond: 1700 };
   const clone = x => JSON.parse(JSON.stringify(x));
@@ -19,7 +19,7 @@
     const p = Object.assign({ learned: 0, level: 0, days: {}, promotions: {}, mastered: {}, score: START }, clone(raw || {}));
     p.learned = Math.max(0, Math.min(300, Number(p.learned) || 0));
     p.level = Math.max(0, Math.min(5, Number(p.level) || 0));
-    p.days = p.days || {}; p.promotions = p.promotions || {}; p.mastered = p.mastered || {};
+    p.days = p.days || {}; p.studyDays = p.studyDays || {}; p.promotions = p.promotions || {}; p.mastered = p.mastered || {};
     if (p.version !== 2) { p.version = 2; p.score = START; p.migratedLearned = p.learned; }
     return p;
   }
@@ -34,17 +34,50 @@
     return shuffle([8, 7, 6].flatMap(g => shuffle(H.LIST.filter(x => x.grade === g), random).slice(0, 10)
       .map((x, i) => ({ h: x.h, type: i % 2 ? 'eum' : 'hun' }))), random);
   }
-  function dailyPlan(raw, ts, limit = 20) {
+  function dailyPlan(raw, ts) {
     const p = profile(raw), date = day(ts);
-    if (p.days[date]) return clone(p.days[date]);
-    const size = Math.max(1, Math.min(DAILY_LIMIT, Math.floor(Number(limit) || DAILY_LIMIT)));
+    if (p.studyDays[date]) { const plan=clone(p.studyDays[date]);plan.sequence=plan.sequence||[...plan.chars];return plan; }
+    const legacy = p.days[date];
+    if (legacy?.done) {
+      // Already earned points/progress are retained. No extra learning or reward today.
+      let hs = [...legacy.chars].slice(0, DAILY_LIMIT);
+      while (hs.length % BATCH_SIZE) { const x=H.LIST.find(x=>!hs.includes(x.h)); hs.push(x.h); }
+      return { version:1,date,chars:hs.join(''),sequence:hs,freshChars:'',from:p.learned,to:p.learned,stage:legacy.stage,reward:legacy.reward,
+        legacyCompleted:true,done:true,completedAt:legacy.completedAt||ts,batches:{},practice:{} };
+    }
     const end = H.BOUNDS[Math.min(4, p.level)];
     const fresh = p.level < 5 && p.learned < end;
-    const items = fresh ? H.LIST.slice(p.learned, Math.min(end, p.learned + size)) : H.LIST.slice(Math.max(0, p.learned - size), p.learned);
-    return { date, chars: items.map(x => x.h).join(''), from: p.learned, to: fresh ? p.learned + items.length : p.learned,
-      stage: Math.min(4, p.level), fresh, reward: [5, 10, 10, 15, 15][Math.min(4, p.level)], done: false };
+    const items = fresh ? H.LIST.slice(p.learned, Math.min(end, p.learned + DAILY_LIMIT)) : H.LIST.slice(Math.max(0, p.learned - DAILY_LIMIT), p.learned);
+    const freshChars = fresh ? items.map(x=>x.h).join('') : '';
+    // Old 1–20/day settings may leave a stage with fewer than five new characters.
+    // Fill that last batch with already learned characters; never cross a grade boundary.
+    while (!items.length || items.length % BATCH_SIZE) {
+      const extra=H.LIST.slice(0,end).find(x=>!items.some(y=>y.h===x.h));
+      if(!extra)break;items.push(extra);
+    }
+    return { version:1,date,chars:items.map(x=>x.h).join(''),sequence:items.map(x=>x.h),freshChars,from:p.learned,to:p.learned+[...freshChars].length,
+      stage:Math.min(4,p.level),reward:[5,10,10,15,15][Math.min(4,p.level)],done:false,batches:{},practice:{} };
   }
-  const dailyItems = plan => [...plan.chars].flatMap(h => [{ h, type: 'hun' }, { h, type: 'eum' }]);
+  const batchChars = (plan,index) => [...plan.chars].slice(index*BATCH_SIZE,(index+1)*BATCH_SIZE);
+  const batchCount = plan => Math.ceil([...plan.chars].length/BATCH_SIZE);
+  const isBatchOpen = (plan,index) => Number.isInteger(index)&&index>=0&&index<batchCount(plan)&&(index===0||!!plan.batches?.[index-1]?.passed||!!plan.legacyCompleted);
+  const nextBatch = plan => { for(let i=0;i<batchCount(plan);i++)if(!plan.batches?.[i]?.passed)return i;return 0; };
+  const dailyItems = (plan,index=0) => batchChars(plan,index).map(h=>({h,type:'pair'}));
+  const visibleChars = plan => [...plan.chars].filter((_,i)=>isBatchOpen(plan,Math.floor(i/BATCH_SIZE)));
+  function ensurePlan(raw,ts) { const p=profile(raw),date=day(ts);p.studyDays[date]=dailyPlan(p,ts);return p; }
+  function checkBatch(p,date,index,ts) {
+    const plan=p.studyDays[date];
+    if(!plan||date!==day(ts))throw new Error('날짜가 바뀌었어요. 한자 홈에서 오늘 학습을 시작해 주세요.');
+    if(!isBatchOpen(plan,index))throw new Error('앞 묶음에서 5자 중 4자 이상 통과한 뒤 시작해 주세요.');
+    return plan;
+  }
+  function recordPractice(raw,date,index,h,ts) {
+    const p=profile(raw),plan=checkBatch(p,date,index,ts);
+    if(!batchChars(plan,index).includes(h))throw new Error('현재 묶음의 한자를 연습해 주세요.');
+    plan.practice=plan.practice||{};
+    if(!plan.practice[h])plan.practice[h]={count:PRACTICE_COUNT,ts};
+    return p;
+  }
   function examItems(level, count, random = Math.random) {
     const end = H.BOUNDS[level], start = level ? H.BOUNDS[level - 1] : 0;
     const n = Math.max(10, Math.min(60, Math.floor(Number(count) || TEST_COUNTS[level])));
@@ -61,21 +94,25 @@
     const right = marked.filter(x => x.correct).length;
     return { total: items.length, right, percent: items.length ? right * 100 / items.length : 0, marked };
   }
-  function finishDaily(raw, date, items, answers, ts) {
-    const p = profile(raw), plan = p.days[date];
-    if (!plan || date !== day(ts)) throw new Error('날짜가 바뀌었어요. 한자 홈에서 오늘 학습을 시작해 주세요.');
-    const expected = dailyItems(plan);
-    const key = xs => xs.map(q => q.h + ':' + q.type).sort().join('|');
-    if (!items.length || key(items) !== key(expected) || answers.length !== items.length) throw new Error('오늘의 학습 문제를 모두 풀어 주세요.');
-    const result = grade(items, answers), passed = result.right * 10 >= result.total * 9;
-    const awarded = passed && !plan.done;
-    plan.lastRight = result.right; plan.total = result.total;
+  function finishBatch(raw, date, index, items, answers, ts) {
+    const p=profile(raw),plan=checkBatch(p,date,index,ts),chars=batchChars(plan,index);
+    if(items.length!==BATCH_SIZE||answers.length!==BATCH_SIZE||new Set(items.map(q=>q.h)).size!==BATCH_SIZE||items.some(q=>q.type!=='pair'||!chars.includes(q.h)))throw new Error('현재 묶음의 5자 문제를 모두 풀어 주세요.');
+    if(chars.some(h=>plan.practice?.[h]?.count!==PRACTICE_COUNT))throw new Error('한 글자마다 획순에 맞게 두 번 완성해 주세요.');
+    const marked=items.map((q,i)=>{const a=answers[i]||{},g=grade([{h:q.h,type:'hun'},{h:q.h,type:'eum'}],[a.hun,a.eum]);return {h:q.h,correct:g.right===2,hunCorrect:g.marked[0].correct,eumCorrect:g.marked[1].correct};});
+    const right=marked.filter(q=>q.correct).length,result={right,total:BATCH_SIZE,percent:right*20,marked},passed=right>=4;
+    plan.batches=plan.batches||{};
+    const previous=plan.batches[index];
+    let points=0;
     if (passed) {
-      for (const h of [...plan.chars]) if (result.marked.filter(q => q.h === h).every(q => q.correct)) p.mastered[h] = true;
-      p.learned = Math.max(p.learned, plan.to);
-      if (awarded) { p.score += plan.reward; plan.done = true; plan.completedAt = ts; plan.completedRight = result.right; p.lastDone = date; }
+      for(const q of marked)if(q.correct)p.mastered[q.h]=true;
+      if(!previous?.passed)plan.batches[index]={passed:true,right,total:BATCH_SIZE,ts};
+      let learned=0;
+      for(let i=0;i<batchCount(plan);i++){if(!plan.batches[i]?.passed)break;learned+=batchChars(plan,i).filter(h=>plan.freshChars.includes(h)).length;}
+      p.learned=Math.max(p.learned,plan.from+learned);
+      const all=Array.from({length:batchCount(plan)},(_,i)=>plan.batches[i]?.passed).every(Boolean);
+      if(all&&!plan.done){points=plan.reward;p.score+=points;plan.done=true;plan.completedAt=ts;p.lastDone=date;}
     }
-    return { p, result, passed, awarded, points: awarded ? plan.reward : 0 };
+    return {p,result,passed,points,done:plan.done,next:passed&&index+1<batchCount(plan)?index+1:null};
   }
   function finishExam(raw, level, items, answers, ts) {
     const p = profile(raw), date = day(ts);
@@ -107,5 +144,5 @@
     rows.forEach((r, i) => { r.rank = i && cmp(r, rows[i - 1]) === 0 ? rows[i - 1].rank : i + 1; });
     return rows;
   }
-  window.HanjaEngine = {tierOf, START, DAILY_LIMIT, TEST_COUNTS, THRESHOLDS, day, shuffle, profile, question, diagnostic, dailyPlan, dailyItems, examItems, grade, finishDaily, finishExam, summary, ranking };
+  window.HanjaEngine = {tierOf,START,DAILY_LIMIT,BATCH_SIZE,PRACTICE_COUNT,TEST_COUNTS,THRESHOLDS,day,shuffle,profile,question,diagnostic,dailyPlan,dailyItems,batchChars,batchCount,isBatchOpen,nextBatch,visibleChars,ensurePlan,recordPractice,examItems,grade,finishBatch,finishExam,summary,ranking};
 })();

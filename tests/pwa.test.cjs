@@ -14,9 +14,9 @@ async function main() {
   assert.equal(manifest.name, '한자 티어');
   const index=read('index.html');
   const scriptFiles=[...index.matchAll(/src="(js\/[^"]+)"/g)].map(m=>m[1].split('?')[0]);
-  assert.deepEqual(scriptFiles,['js/firebase-config.js','js/hanja.js','js/hanja-engine.js','js/backend.js','js/hanja-app.js','js/hanja-learning.js','js/hanja-admin.js']);
+  assert.deepEqual(scriptFiles,['js/firebase-config.js','js/hanja.js','js/hanja-engine.js','js/backend.js','js/hanja-app.js','js/hanja-strokes.js','js/stroke-practice.js','js/hanja-learning.js','js/hanja-admin.js']);
   for(const name of ['app','teacher','tier','tracks','econ','econ-student','econ-teacher','board','quest','media','prices','importer','xlsx-lite'])assert.equal(fs.existsSync(path.join(root,'js',name+'.js')),false,'Unrelated module remains: '+name);
-  const ui=index+read('js/hanja-app.js')+read('js/hanja-admin.js')+read('js/hanja-learning.js');
+  const ui=index+read('js/hanja-app.js')+read('js/hanja-admin.js')+read('js/hanja-strokes.js','js/stroke-practice.js','js/hanja-learning.js');
   assert.doesNotMatch(ui,/경제|퀘스트|리코더|타자|생활 티어|entries\//);
   assert.deepEqual(Object.keys(JSON.parse(read('database.rules.json')).rules).sort(),['config','hanja','hanjaRanks','users']);
   assert.equal(manifest.prefer_related_applications, false);
@@ -32,7 +32,7 @@ async function main() {
   assert.match(read('index.html'), /rel="manifest"[^>]*href="manifest.webmanifest"/);
 
   const handlers = {}, entries = new Map(), deleted = [];
-  const cacheName = 'hanja-tier-pwa:/hanja-tier/:v6';
+  const cacheName = 'hanja-tier-pwa:/hanja-tier/:v7';
   let online = true, fetched = 0, claimed = false;
   const response = label => ({ ok: true, label, clone() { return response(label); } });
   const normalize = request => new URL(typeof request === 'string' ? request : request.url, scope).href;
@@ -80,7 +80,7 @@ async function main() {
   assert.equal(asset.label, scope + 'js/hanja-app.js');
   online = false;
   assert.equal((await dispatch(request(scope + 'index.html', 'navigate'))).label, './offline.html');
-  assert.equal((await dispatch(request(scope + 'js/hanja-app.js?v=new'))).label, scope + 'js/hanja-app.js');
+  assert.equal((await dispatch(request(scope + 'js/hanja-app.js?v=new'))).label, './js/hanja-app.js?v=batch-1');
   console.log('PASS: manifest, icon dimensions, nested Pages path, scoped cache, offline fallback, private-request exclusion');
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

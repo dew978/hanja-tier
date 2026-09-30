@@ -1,19 +1,22 @@
 /* Installable PWA; cache only the application assets inside this project scope. */
 const PREFIX = 'hanja-tier-pwa:' + new URL(self.registration.scope).pathname + ':';
-const CACHE = PREFIX + 'v6';
+const CACHE = PREFIX + 'v7';
 const ASSETS = [
   "./",
   "./index.html",
   "./offline.html",
   "./manifest.webmanifest",
-  "./css/hanja.css?v=hanji-1",
+  "./css/hanja.css?v=batch-1",
   "./js/firebase-config.js",
   "./js/hanja.js",
-  "./js/hanja-engine.js",
+  "./js/hanja-engine.js?v=batch-1",
   "./js/backend.js",
-  "./js/hanja-app.js",
-  "./js/hanja-learning.js?v=hanji-1",
-  "./js/hanja-admin.js",
+  "./js/hanja-app.js?v=batch-1",
+  "./js/hanja-learning.js?v=batch-1",
+  "./js/hanja-admin.js?v=batch-1",
+  "./js/hanja-strokes.js?v=batch-1",
+  "./js/stroke-practice.js?v=batch-1",
+  "./fonts/Gungsuh-Regular.woff2",
   "./icons/apple-touch-icon.png",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
