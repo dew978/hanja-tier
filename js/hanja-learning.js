@@ -70,7 +70,7 @@
   function header(title, pos, total) { return `<div class="a-head"><h2>${title}</h2><span class="sp"></span><button class="btn sm" id="hj-quit">그만하기</button></div><div class="hj-progress"><i style="width:${100 * pos / total}%"></i></div>`; }
   function bindQuit() { $('#hj-quit').onclick = async () => { if (await A.confirmBox('한자 홈으로 돌아갈까요?', '오늘의 한자 묶음은 유지돼요. 끝내지 않은 테스트는 처음부터 다시 풀어요.', '돌아가기')) { session = null; redraw(); } }; }
   function trace(canvas, onWritten) {
-    const ctx = canvas.getContext('2d'); ctx.lineWidth = 7; ctx.strokeStyle = '#2857d7'; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    const ctx = canvas.getContext('2d'); ctx.lineWidth = 7; ctx.strokeStyle = '#38342d'; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     let prev = null, distance = 0;
     const point = e => { const r = canvas.getBoundingClientRect(); return { x: (e.clientX-r.left)*canvas.width/r.width, y: (e.clientY-r.top)*canvas.height/r.height }; };
     canvas.onpointerdown = e => { e.preventDefault(); canvas.setPointerCapture(e.pointerId); prev = point(e); };
