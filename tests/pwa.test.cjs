@@ -13,7 +13,7 @@ async function main() {
   assert.equal(manifest.display, 'standalone');
   assert.equal(manifest.name, '한자 티어');
   const index=read('index.html');
-  const scriptFiles=[...index.matchAll(/src="(js\/[^"]+)"/g)].map(m=>m[1]);
+  const scriptFiles=[...index.matchAll(/src="(js\/[^"]+)"/g)].map(m=>m[1].split('?')[0]);
   assert.deepEqual(scriptFiles,['js/firebase-config.js','js/hanja.js','js/hanja-engine.js','js/backend.js','js/hanja-app.js','js/hanja-learning.js','js/hanja-admin.js']);
   for(const name of ['app','teacher','tier','tracks','econ','econ-student','econ-teacher','board','quest','media','prices','importer','xlsx-lite'])assert.equal(fs.existsSync(path.join(root,'js',name+'.js')),false,'Unrelated module remains: '+name);
   const ui=index+read('js/hanja-app.js')+read('js/hanja-admin.js')+read('js/hanja-learning.js');
@@ -32,14 +32,14 @@ async function main() {
   assert.match(read('index.html'), /rel="manifest"[^>]*href="manifest.webmanifest"/);
 
   const handlers = {}, entries = new Map(), deleted = [];
-  const cacheName = 'hanja-tier-pwa:/hanja-tier/:v5';
+  const cacheName = 'hanja-tier-pwa:/hanja-tier/:v6';
   let online = true, fetched = 0, claimed = false;
   const response = label => ({ ok: true, label, clone() { return response(label); } });
   const normalize = request => new URL(typeof request === 'string' ? request : request.url, scope).href;
   const cache = {
     async addAll(assets) {
       for (const asset of assets) {
-        assert.ok(fs.existsSync(path.join(root, asset === './' ? 'index.html' : asset)), asset);
+        assert.ok(fs.existsSync(path.join(root, asset === './' ? 'index.html' : asset.split('?')[0])), asset);
         assert.ok(!asset.includes('preview'), 'Preview data must not be pre-cached');
         entries.set(normalize(asset), response(asset));
       }
