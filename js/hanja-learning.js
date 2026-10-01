@@ -152,7 +152,8 @@
     const item=session.items[session.i], q=E.question(item.h,item.type,Math.random,session.mode==='exam'?H.LIST.slice(0,H.BOUNDS[session.level]):H.LIST);
     const label={baseline:'처음 실력 확인',recheck:'발전도 확인',study:'오늘의 뜻·음 확인',exam:'승급 시험'}[session.mode];
     const written=session.mode==='exam';
-    main.innerHTML=`<div class="panel">${header(label+' · '+(session.i+1)+' / '+session.items.length,session.i,session.items.length)}<div class="hj-q"><p class="prompt">${item.type==='hun'?'뜻':'음'} ${written?'쓰기':'선택'}</p><div class="big">${item.h}</div>
+    const questionPrompt=written?`${item.type==='hun'?'뜻':'음'} 쓰기`:(item.type==='hun'?'뜻을 고르세요.':'음을 고르세요.');
+    main.innerHTML=`<div class="panel">${header(label+' · '+(session.i+1)+' / '+session.items.length,session.i,session.items.length)}<div class="hj-q"><p class="prompt${written?'':' prompt-choice'}">${questionPrompt}</p><div class="big">${item.h}</div>
       ${written?'<form id="hj-answer-form"><label for="hj-written">한글로 답하기</label><input id="hj-written" autocomplete="off" maxlength="30" required><button class="btn primary" type="submit">답 제출</button></form>':`<div class="hj-opts">${q.options.map((o,i)=>`<button data-answer="${i}">${esc(o)}</button>`).join('')}</div>`}<button class="btn ghost" id="hj-unknown" style="margin-top:20px">잘 모르겠어요</button></div></div>`;
     bindQuit(); let answered=false;
     const submit=a=>{if(answered)return;answered=true;session.answers.push(a.trim());session.i++;if(session.i>=session.items.length)session.step='result';redraw();};

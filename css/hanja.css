@@ -99,6 +99,7 @@ p { font-size: calc(1rem + 2pt); line-height: 1.8; overflow-wrap: anywhere; }
 .hj-info .hun { font-family: var(--serif); font-size: 2em; font-weight: 700; letter-spacing: -.03em; margin-top: 8px; }
 .hj-q { text-align: center; }
 .hj-q .prompt { font-size: calc(1.1rem + 2pt); color: var(--muted); margin-bottom: 8px; }
+.hj-q .prompt-choice { font-size: calc(1.1rem + 6pt); }
 .hj-q .big { font-family: var(--serif); font-size: 5em; font-weight: 700; line-height: 1.3; margin: 12px 0 24px; color: #302a22; }
 .hj-opts { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; max-width: 560px; margin: 0 auto; }
 .hj-opts button { border: 1px solid #bbaa87; background: #f6eddb; border-radius: 4px; padding: 18px 10px; font-size: 1.25em; font-weight: 700; color: var(--text); box-shadow: 0 2px 0 #dacbab; }

@@ -32,7 +32,7 @@ async function main() {
   assert.match(read('index.html'), /rel="manifest"[^>]*href="manifest.webmanifest"/);
 
   const handlers = {}, entries = new Map(), deleted = [];
-  const cacheName = 'hanja-tier-pwa:/hanja-tier/:v10';
+  const cacheName = 'hanja-tier-pwa:/hanja-tier/:v11';
   let online = true, fetched = 0, claimed = false;
   const response = label => ({ ok: true, label, clone() { return response(label); } });
   const normalize = request => new URL(typeof request === 'string' ? request : request.url, scope).href;
