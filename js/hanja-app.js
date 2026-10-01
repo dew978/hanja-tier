@@ -4,7 +4,7 @@
   const $ = s => document.querySelector(s);
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const S = { uid:null, isTeacher:false, tab:'hanja', hanja:null, hanjaRanks:{}, users:{}, profiles:{}, config:{} };
-  let subscriptions = [], generation = 0, settingUp = false, installPrompt = null, homeDialogOpen = false;
+  let subscriptions = [], generation = 0, settingUp = false, signingIn = false, installPrompt = null, homeDialogOpen = false;
   function toast(msg, kind='') {
     const el = document.createElement('div'); el.className='toast '+kind; el.textContent=msg;
     $('#toast-root').append(el); setTimeout(()=>el.remove(),4500);
@@ -29,13 +29,13 @@
   }
   function show(name) {document.querySelectorAll('.screen').forEach(el=>el.classList.toggle('hidden',el.id!=='scr-'+name));S.screen=name;}
   function render() {
-    if(!S.uid)return;
+    if(!S.uid || S.passwordRequired)return;
     if(S.isTeacher)window.HanjaAdmin?.render();
     else window.HanjaStudy?.render($('#st-main'));
     syncInstall();
   }
   async function requestHome() {
-    if (!S.uid || homeDialogOpen) return;
+    if (!S.uid || S.passwordRequired || homeDialogOpen) return;
     const blocked = !S.isTeacher && window.HanjaStudy?.homeBlockedMessage();
     if (blocked) { toast(blocked); return; }
     const token = generation;
@@ -55,18 +55,31 @@
     homeDialogOpen = false;
     subscriptions.forEach(off=>off()); subscriptions=[];
     window.HanjaStudy?.reset();window.HanjaAdmin?.reset();$('#modal-root').replaceChildren();
-    Object.assign(S,{uid:null,isTeacher:false,hanja:null,hanjaRanks:{},users:{},profiles:{},config:{},tab:'hanja'});
+    Object.assign(S,{uid:null,isTeacher:false,passwordRequired:false,hanja:null,hanjaRanks:{},users:{},profiles:{},config:{},tab:'hanja'});
+    $('#first-password-form').reset();
     $('#st-main').replaceChildren();$('#tc-main').replaceChildren();
   }
-  async function startSession(uid, token) {
+  async function startSession(uid, token, login) {
     const teacher=await B.get('config/teacher');
     const isTeacher=teacher===uid;
     const users=await B.get('users')||{};
     if(token!==generation)return;
     if(!isTeacher && !users[uid])throw new Error('등록된 학생 계정이 아니에요. 관리자에게 확인해 주세요.');
-    Object.assign(S,{uid,isTeacher,users});
+    Object.assign(S,{uid,isTeacher,users,passwordRequired:!isTeacher && !!users[uid]?.pwc});
     $('#account-name').textContent=isTeacher?'관리자':users[uid].name;
     $('#login-pw').value='';
+    if (!isTeacher) {
+      const passwordRequired = await window.StudentAccounts.requiresPasswordChange(B,uid,users[uid],login);
+      if (token!==generation) return;
+      S.passwordRequired = passwordRequired;
+      if (S.passwordRequired) {
+        $('#first-password-account').textContent=users[uid].name+' · '+users[uid].loginId;
+        $('#first-password-err').textContent='';
+        show('first-password');
+        $('#first-password-new').focus();
+        return;
+      }
+    }
     show(isTeacher?'teacher':'student');
     $('#app-header').classList.remove('hidden');
     const watch=(path,key,defaultValue)=>subscriptions.push(B.on(path,value=>{if(token!==generation)return;S[key]=value||defaultValue;render();}));
@@ -75,11 +88,11 @@
     if(isTeacher)watch('hanja','profiles',{});else watch('hanja/'+uid,'hanja',null);
     render();
   }
-  async function authChanged(uid) {
+  async function authChanged(uid, login=null) {
     if(settingUp)return;
     const token=++generation;endSession();$('#app-header').classList.add('hidden');show('loading');
     try {
-      if(uid)await startSession(uid,token);
+      if(uid)await startSession(uid,token,login);
       else {const teacher=await B.get('config/teacher');if(token===generation)show(teacher?'login':'setup');}
     } catch(e) {if(token!==generation)return;show('login');$('#login-err').textContent=e.message;}
   }
@@ -96,12 +109,24 @@
     modal('<h3>한자 티어 앱 설치</h3><p>Chrome·Edge: 주소창 설치 아이콘 / 메뉴 → 앱 설치</p><p>iPhone·iPad: Safari → 공유 → 홈 화면에 추가</p><p class="note">로그인·기록 저장: 인터넷 연결 필요</p><div class="foot"><button class="btn primary" data-close>확인</button></div>');
   }
   function passwordDialog() {
+    if (!S.uid || S.passwordRequired) return;
     const m=modal('<h3>비밀번호 변경</h3><form id="password-form"><label>새 비밀번호<input name="pw" type="password" minlength="6" maxlength="100" autocomplete="new-password" required></label><label>새 비밀번호 확인<input name="again" type="password" minlength="6" autocomplete="new-password" required></label><p class="err" role="alert"></p><div class="foot"><button type="button" class="btn" data-close>취소</button><button type="submit" class="btn primary">변경</button></div></form>');
     const form=m.el.querySelector('form');form.onsubmit=e=>{e.preventDefault();submitForm(form,async()=>{if(form.elements.pw.value!==form.elements.again.value)throw new Error('비밀번호가 서로 달라요.');await B.changeOwnPassword(form.elements.pw.value);m.close();toast('비밀번호를 변경했어요.');},form.querySelector('.err'));};
   }
   window.App={S,B,$,esc,toast,modal,confirmBox,settings,render,syncInstall,submitForm,requestHome};
   document.addEventListener('DOMContentLoaded',async()=>{
-    $('#login-form').onsubmit=e=>{e.preventDefault();submitForm(e.target,()=>B.signIn($('#login-id').value.trim().toLowerCase(),$('#login-pw').value),$('#login-err'));};
+    $('#login-form').onsubmit=e=>{e.preventDefault();submitForm(e.target,async()=>{
+      const loginId=$('#login-id').value.trim().toLowerCase(),password=$('#login-pw').value;
+      signingIn=true;
+      try {const uid=await B.signIn(loginId,password);$('#login-notice').textContent='';await authChanged(uid,{loginId,usedInitial:password===window.StudentAccounts.INITIAL_PASSWORD});} finally {signingIn=false;}
+    },$('#login-err'));};
+    $('#first-password-form').onsubmit=e=>{e.preventDefault();submitForm(e.target,async()=>{
+      if(!S.uid || !S.passwordRequired)throw new Error('다시 로그인해 주세요.');
+      const loginId=S.users[S.uid].loginId;
+      await window.StudentAccounts.changeFirstPassword(B,S.uid,$('#first-password-new').value,$('#first-password-again').value);
+      $('#login-id').value=loginId;$('#login-pw').value='';
+      $('#login-notice').textContent='비밀번호 변경 완료. 새 비밀번호로 다시 로그인해 주세요.';
+    },$('#first-password-err'));};
     $('#setup-form').onsubmit=e=>{e.preventDefault();submitForm(e.target,async()=>{
       settingUp=true;try{const uid=await B.signUpSelf('master',$('#setup-pw').value);const result=await B.tx('config/teacher',current=>current?undefined:uid);if(!result.committed)throw new Error('이미 관리자 계정이 있어요.');await B.set('config/className',$('#setup-class').value.trim());await B.set('config/teacherName','관리자');settingUp=false;await authChanged(uid);}finally{settingUp=false;}
     },$('#setup-err'));};
@@ -112,6 +137,6 @@
     window.addEventListener('offline',()=>toast('인터넷 연결이 끊겼어요. 기록 저장 전 연결을 확인해 주세요.'));
     if('serviceWorker' in navigator && B.mode==='firebase')navigator.serviceWorker.register('./sw.js').catch(()=>{});
     syncInstall();
-    try{await B.init();if(B.mode==='demo')$('#demo-note').classList.remove('hidden');B.onAuth(authChanged);}catch(e){$('#loading-msg').textContent=e.message;}
+    try{await B.init();if(B.mode==='demo')$('#demo-note').classList.remove('hidden');B.onAuth(uid=>{if(!signingIn)authChanged(uid);});}catch(e){$('#loading-msg').textContent=e.message;}
   });
 })();

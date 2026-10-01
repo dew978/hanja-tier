@@ -182,3 +182,16 @@ p { font-size: calc(1rem + 2pt); line-height: 1.8; overflow-wrap: anywhere; }
 .hj-opts button[aria-pressed="true"] { background: #e0e7d8; border: 2px solid #415d49; box-shadow: inset 0 0 0 1px #415d49; }
 @media(max-width:750px) { .hj-writing-card { grid-template-columns: minmax(0,1fr); } .hj-writing { max-width: 340px; margin: auto; } }
 @media(max-width:520px) { .hj-pair-fields { grid-template-columns: 1fr; gap: 12px; } .hj-pair-fields fieldset { padding: 12px; } .hj-pair-fields .hj-opts button { padding: 12px 8px; } .hj-batch { grid-template-columns: 1fr; } .hj-batch .btn { grid-column: 1; grid-row: auto; margin-top: 8px; } }
+
+/* Student spreadsheet registration and first sign-in. */
+a.btn { display:inline-flex; align-items:center; justify-content:center; text-decoration:none; }
+.student-import { display:flex; flex-wrap:wrap; gap:24px; justify-content:space-between; align-items:center; padding:24px; margin:20px 0; border:1px solid var(--line); background:rgba(226,233,219,.45); }
+.student-import h3 { margin:0 0 12px; }
+.student-import .note { margin:6px 0; }
+.student-import-actions { display:flex; flex-wrap:wrap; gap:10px; }
+.import-table { max-height:45vh; overflow:auto; }
+.import-table th { position:sticky; top:0; background:var(--paper,#f5f2e8); }
+.import-table .err { min-width:180px; }
+#first-password-form .lg { width:100%; white-space:normal; }
+#scr-first-password .auth-card { width:min(100%,490px); }
+@media(max-width:520px) { .student-import { padding:18px; gap:16px; } .student-import-actions { width:100%; } .student-import-actions .btn { width:100%; } }
