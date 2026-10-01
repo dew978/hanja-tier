@@ -1,14 +1,14 @@
 <!doctype html>
 <html lang="ko">
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8"><base href="../">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#2e3730">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="한자 티어">
   <meta name="description" content="한자 8급부터 6급까지. 뜻·음·따라쓰기로 매일 배우는 한자 티어.">
-  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="manifest" href="preview.webmanifest">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="icon" type="image/png" href="icons/icon-192.png">
   <link rel="stylesheet" href="css/hanja.css?v=credit-1">
@@ -42,10 +42,10 @@
   <section id="scr-student" class="screen hidden"><main id="st-main" class="page" aria-label="한자 학습"></main></section>
   <section id="scr-teacher" class="screen hidden"><nav id="tc-tabs" class="admin-tabs" aria-label="한자 관리 메뉴"></nav><main id="tc-main" class="page" aria-label="한자 학습 관리"></main></section>
   <div id="modal-root"></div><div id="toast-root" role="status" aria-live="polite"></div>
-  <script src="js/firebase-config.js"></script>
+
   <script src="js/hanja.js"></script>
   <script src="js/hanja-engine.js?v=credit-1"></script>
-  <script src="js/backend.js?v=credit-1"></script>
+  <script src="tests/assessment-seed.js"></script><script src="js/backend.js?v=credit-1"></script>
   <script src="js/student-accounts.js?v=credit-1"></script>
   <script src="js/hanja-app.js?v=credit-1"></script>
   <script src="js/hanja-strokes.js?v=batch-1"></script>

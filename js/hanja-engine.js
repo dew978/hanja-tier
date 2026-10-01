@@ -2,6 +2,7 @@
 (function () {
   const H = window.Hanja;
   const START = 1000, DAILY_LIMIT = 10, BATCH_SIZE = 5, PRACTICE_COUNT = 2;
+  const ASSESSMENT_POINT = 1, RECHECK_INTERVAL = 7 * 86400000;
   const TEST_COUNTS = [30, 40, 50, 60, 60];
   const THRESHOLDS = { silver: 1100, gold: 1250, platinum: 1450, diamond: 1700 };
   const clone = x => JSON.parse(JSON.stringify(x));
@@ -30,9 +31,86 @@
     const other = [...new Set(pool.filter(y => y.h !== h).map(y => type === 'hun' ? y.hun : y.eum))].filter(a => !accepted.includes(a));
     return { h, type, answer, options: shuffle([answer, ...shuffle(other, random).slice(0, 3)], random) };
   }
-  function diagnostic(random = Math.random) {
-    return shuffle([8, 7, 6].flatMap(g => shuffle(H.LIST.filter(x => x.grade === g), random).slice(0, 10)
-      .map((x, i) => ({ h: x.h, type: i % 2 ? 'eum' : 'hun' }))), random);
+  function diagnostic(random = Math.random, seen = {}) {
+    return shuffle([8, 7, 6].flatMap(g => {
+      const pool=H.LIST.filter(x=>x.grade===g);
+      return [...shuffle(pool.filter(x=>!seen[x.h]),random),...shuffle(pool.filter(x=>seen[x.h]),random)].slice(0,10)
+        .map((x, i) => ({ h: x.h, type: i % 2 ? 'eum' : 'hun' }));
+    }), random);
+  }
+  function validDiagnostic(items) {
+    return Array.isArray(items) && items.length===30 && new Set(items.map(q=>q.h)).size===30 &&
+      items.every(q=>H.BY[q.h] && ['hun','eum'].includes(q.type)) &&
+      [8,7,6].every(g=>items.filter(q=>H.BY[q.h].grade===g).length===10);
+  }
+  function recognize(p, marked) {
+    let chars='';
+    p.assessmentCredits=p.assessmentCredits||{};
+    for(const q of marked)if(q.correct && !p.mastered[q.h]){
+      p.mastered[q.h]=true;
+      p.assessmentCredits[q.h]=ASSESSMENT_POINT;
+      chars+=q.h;
+    }
+    const points=[...chars].length*ASSESSMENT_POINT;
+    p.score+=points;
+    return {chars,points};
+  }
+  function migrateAssessment(raw) {
+    const p=profile(raw);
+    if(!p.baseline || p.assessmentCreditVersion===1)return p;
+    p.assessmentCreditVersion=1;
+    p.assessmentSeen=p.assessmentSeen||{};
+    const plan=Array.isArray(p.baselinePlan)?p.baselinePlan:[];
+    for(const q of plan)if(H.BY[q.h])p.assessmentSeen[q.h]=true;
+    // Old versions retained only totals. A perfect score uniquely identifies all correct characters.
+    const perfect=[p.baseline,p.assessment].some(r=>r?.right===30 && r.total===30);
+    if(perfect && validDiagnostic(plan)){
+      const award=recognize(p,plan.map(q=>({...q,correct:true})));
+      p.legacyAssessmentCredit={chars:award.chars,points:award.points};
+    }else if(p.baseline.right>0 || p.assessment?.right>0){
+      p.creditReviewNeeded=true;
+    }
+    return p;
+  }
+  function prepareAssessment(raw,mode,ts,random=Math.random) {
+    const p=migrateAssessment(raw);
+    if(mode==='baseline'){
+      if(p.baseline)throw new Error('처음 실력 확인은 이미 완료했어요.');
+      if(!p.baselinePlan)p.baselinePlan=diagnostic(random);
+    }else{
+      if(!p.baseline)throw new Error('처음 실력 확인부터 해 주세요.');
+      if(mode==='credit-review'){
+        if(!p.creditReviewNeeded)throw new Error('이전 진단 확인은 이미 완료했어요.');
+        if(!p.creditReviewPlan)p.creditReviewPlan=validDiagnostic(p.baselinePlan)?clone(p.baselinePlan):diagnostic(random,p.assessmentSeen);
+      }else if(mode==='recheck'){
+        const after=(p.assessment||p.baseline).ts;
+        if(ts-after<RECHECK_INTERVAL)throw new Error('발전도 확인은 7일마다 할 수 있어요.');
+        if(!p.recheckPlan || p.recheckPlan.after!==after)p.recheckPlan={after,items:diagnostic(random,p.assessmentSeen)};
+      }else throw new Error('평가 종류를 확인해 주세요.');
+    }
+    return p;
+  }
+  function assessmentItems(p,mode) {
+    return mode==='baseline'?p.baselinePlan:mode==='credit-review'?p.creditReviewPlan:p.recheckPlan?.items;
+  }
+  function finishAssessment(raw,mode,items,answers,ts) {
+    const p=migrateAssessment(raw);
+    if(mode==='baseline' && p.baseline)throw new Error('이미 저장된 첫 진단을 유지합니다.');
+    if(mode!=='baseline' && !p.baseline)throw new Error('처음 실력 확인부터 해 주세요.');
+    if(mode==='recheck' && ts-(p.assessment||p.baseline).ts<RECHECK_INTERVAL)throw new Error('이번 발전도 확인은 이미 저장됐어요.');
+    if(mode==='credit-review' && !p.creditReviewNeeded)throw new Error('이전 진단 확인은 이미 완료했어요.');
+    if(!['baseline','recheck','credit-review'].includes(mode))throw new Error('평가 종류를 확인해 주세요.');
+    const expected=assessmentItems(p,mode),key=q=>q.h+':'+q.type;
+    if(!validDiagnostic(items) || !validDiagnostic(expected) || answers.length!==30 || items.some(q=>!expected.some(x=>key(x)===key(q))))throw new Error('저장된 30문제를 모두 풀어 주세요.');
+    if(mode==='recheck' && p.recheckPlan.after!==(p.assessment||p.baseline).ts)throw new Error('새 발전도 확인을 시작해 주세요.');
+    const result=grade(items,answers),award=recognize(p,result.marked);
+    const record={right:result.right,total:30,ts,correctChars:result.marked.filter(q=>q.correct).map(q=>q.h).join(''),creditedChars:award.chars,points:award.points,items:clone(items)};
+    p.assessmentCreditVersion=1;p.assessmentSeen=p.assessmentSeen||{};
+    for(const q of items)p.assessmentSeen[q.h]=true;
+    if(mode==='baseline')p.baseline=record;
+    else if(mode==='recheck'){p.assessment=record;delete p.recheckPlan;}
+    else {p.creditReview=record;p.creditReviewNeeded=false;delete p.creditReviewPlan;}
+    return {p,result,points:award.points,newChars:award.chars,recognized:summary(p).mastered,passed:true};
   }
   function dailyPlan(raw, ts) {
     const p = profile(raw), date = day(ts);
@@ -131,18 +209,18 @@
   }
   function summary(raw) {
     const p = profile(raw), base = p.baseline, latest = p.assessment || base;
-    return { score: p.score, level: p.level, learned: p.learned, mastered: Object.keys(p.mastered).filter(h => H.BY[h]).length,
+    return { score: p.score, level: p.level, learned: p.learned, mastered: Object.keys(p.mastered).filter(h => H.BY[h] && p.mastered[h]).length,
       baseline: base ? base.right : -1, current: latest ? latest.right : -1,
       growth: base && latest ? latest.right - base.right : 0, assessedAt: latest ? latest.ts : 0, hasRecheck: !!p.assessment };
   }
   function ranking(users, summaries, track) {
     const rows = Object.keys(users).filter(uid => summaries[uid] && summaries[uid].baseline >= 0 && (track !== 'growth' || summaries[uid].hasRecheck))
       .map(uid => ({ uid, name: users[uid].name, ...summaries[uid] }));
-    const metrics = r => track === 'growth' ? [r.growth] : [r.level, r.mastered, r.learned, r.score];
+    const metrics = r => track === 'growth' ? [r.growth] : [r.mastered, r.level, r.learned, r.score];
     const cmp = (a, b) => { const av = metrics(a), bv = metrics(b); for (let i = 0; i < av.length; i++) if (av[i] !== bv[i]) return bv[i] - av[i]; return 0; };
     rows.sort((a, b) => cmp(a, b) || String(a.name).localeCompare(String(b.name), 'ko'));
     rows.forEach((r, i) => { r.rank = i && cmp(r, rows[i - 1]) === 0 ? rows[i - 1].rank : i + 1; });
     return rows;
   }
-  window.HanjaEngine = {tierOf,START,DAILY_LIMIT,BATCH_SIZE,PRACTICE_COUNT,TEST_COUNTS,THRESHOLDS,day,shuffle,profile,question,diagnostic,dailyPlan,dailyItems,batchChars,batchCount,isBatchOpen,nextBatch,visibleChars,ensurePlan,recordPractice,examItems,grade,finishBatch,finishExam,summary,ranking};
+  window.HanjaEngine = {tierOf,START,DAILY_LIMIT,BATCH_SIZE,PRACTICE_COUNT,ASSESSMENT_POINT,RECHECK_INTERVAL,TEST_COUNTS,THRESHOLDS,day,shuffle,profile,question,diagnostic,migrateAssessment,prepareAssessment,assessmentItems,finishAssessment,dailyPlan,dailyItems,batchChars,batchCount,isBatchOpen,nextBatch,visibleChars,ensurePlan,recordPractice,examItems,grade,finishBatch,finishExam,summary,ranking};
 })();

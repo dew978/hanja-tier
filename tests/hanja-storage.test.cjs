@@ -48,5 +48,11 @@ const getdb=()=>JSON.parse(localStorage.getItem('hanjaTierDemoDB_v1'));
  assert.equal(up.value.score,1105);
  await B.set('hanjaRanks/u',E.summary(up.value));
  assert.equal((await B.get('hanjaRanks')).u.score,1105);
+ // Existing immutable baseline remains intact during one-time credit review.
+ const prepared=await B.tx('hanja/u',raw=>E.prepareAssessment(raw,'credit-review',now));
+ const credited=await B.tx('hanja/u',raw=>E.finishAssessment(raw,'credit-review',prepared.value.creditReviewPlan,prepared.value.creditReviewPlan.map(q=>H.BY[q.h][q.type]),now).p);
+ assert.equal(credited.value.baseline.right,10);assert.equal(credited.value.creditReviewNeeded,false);
+ await B.set('hanjaRanks/u',E.summary(credited.value));
+ assert((await B.get('hanjaRanks')).u.mastered>=30);
  console.log('PASS Hanja-only storage: daily/promotion rewards, separate rankings, fixed baseline/day pool, cross-user denial, unrelated paths denied');
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -76,7 +76,7 @@ test('progress rankings are separate; ties share rank',()=>{
  const growth=E.ranking(users,data,'growth');assert.deepEqual(growth.map(r=>r.rank),[1,1,3]);assert.equal(E.ranking(users,data,'absolute')[0].uid,'b');
  data.a.hasRecheck=false;assert.equal(E.ranking(users,data,'growth').length,2);
 });
-test('legacy progress is retained; first diagnostic does not grant mastery',()=>{const p=E.profile({learned:150,level:3});assert.equal(p.learned,150);assert.equal(p.level,3);assert.equal(p.score,1000);p.baseline={right:30,total:30,ts};assert.equal(E.summary(p).mastered,0);});
+test('legacy progress is retained; totals without a saved plan cannot identify correct characters',()=>{const p=E.profile({learned:150,level:3});assert.equal(p.learned,150);assert.equal(p.level,3);assert.equal(p.score,1000);p.baseline={right:30,total:30,ts};assert.equal(E.summary(E.migrateAssessment(p)).mastered,0);assert(E.migrateAssessment(p).creditReviewNeeded);});
 test('Hanja-only tier boundaries',()=>{for(const [score,id] of [[1000,'bronze'],[1099,'bronze'],[1100,'silver'],[1249,'silver'],[1250,'gold'],[1449,'gold'],[1450,'platinum'],[1699,'platinum'],[1700,'diamond']])assert.equal(E.tierOf(score).id,id);});
 test('meaning and reading aliases accept whitespace and common variants',()=>{assert.equal(E.grade([{h:'地',type:'hun'},{h:'女',type:'eum'}],[' 땅 ','여']).right,2);});
 console.log(`${tests} test groups passed`);

@@ -80,6 +80,15 @@
     // pwc deliberately stays set until the student's next successful sign-in.
     await B.signOut();
   }
+  async function deleteStudent(B, uid) {
+    const teacher=await B.get('config/teacher');
+    if(!teacher || B.currentUid()!==teacher || uid===teacher)throw new Error('관리자만 학생을 삭제할 수 있어요.');
+    const user=await B.get('users/'+uid);
+    if(!user)throw new Error('이미 삭제된 학생이에요.');
+    // One atomic update removes access and both sets of classroom data together.
+    // Firebase Auth identifiers remain reserved; no student password is requested or retained.
+    await B.update('',{['users/'+uid]:null,['hanja/'+uid]:null,['hanjaRanks/'+uid]:null});
+  }
   async function readSpreadsheet(buffer) {
     const fail = () => new Error('엑셀 파일을 읽지 못했어요. 양식에 작성한 뒤 .xlsx로 다시 저장해 주세요.');
     if (buffer.byteLength > 2 * 1024 * 1024 || buffer.byteLength < 22) throw fail();
@@ -167,5 +176,5 @@
     }
     return rows;
   }
-  window.StudentAccounts = { INITIAL_PASSWORD, MAX_STUDENTS, validateRows, nextNumber, register, requiresPasswordChange, changeFirstPassword, readSpreadsheet };
+  window.StudentAccounts = { INITIAL_PASSWORD, MAX_STUDENTS, validateRows, nextNumber, register, deleteStudent, requiresPasswordChange, changeFirstPassword, readSpreadsheet };
 })();

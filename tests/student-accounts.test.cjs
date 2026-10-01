@@ -1,7 +1,8 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const root=path.resolve(__dirname,'..');
 const storage=()=>{const values=new Map();return{getItem:key=>values.get(key)||null,setItem:(key,value)=>values.set(key,String(value)),removeItem:key=>values.delete(key)}};
-global.window={addEventListener(){},HANJA_FIREBASE_CONFIG:null,HANJA_DEMO_NAMESPACE:'studentAccountsTest'};
+const windowEvents={};
+global.window={addEventListener:(type,fn)=>{windowEvents[type]=fn},HANJA_FIREBASE_CONFIG:null,HANJA_DEMO_NAMESPACE:'studentAccountsTest'};
 global.localStorage=storage();global.sessionStorage=storage();
 global.fetch=async()=>({ok:true,json:async()=>JSON.parse(fs.readFileSync(path.join(root,'database.rules.json'),'utf8'))});
 const seed={config:{teacher:'t'},users:{old:{name:'기존 학생',no:1,loginId:'old'}},hanja:{old:{learned:12}}};
@@ -73,5 +74,27 @@ async function settle(test){for(let i=0;i<40;i++){if(test())return;await new Pro
   assert.equal(rendered,0);assert.equal(database().users[freshUid].pwc,true);assert.match(element('#login-notice').textContent,/다시 로그인/);
   await login('fresh','123456');assert.equal(window.App.S.screen,'login');assert.equal(rendered,0);
   await login('fresh','changed-test');assert.equal(window.App.S.screen,'student');assert(rendered>0);assert.equal(database().users[freshUid].pwc,undefined);
+  const profile={version:2,score:1000,learned:0,level:0,baseline:{right:0,total:30,ts:Date.now()}};
+  await B.set('hanja/'+freshUid,profile);
+  const rank={score:1000,level:0,learned:0,mastered:0,baseline:0,current:0,growth:0,assessedAt:profile.baseline.ts,hasRecheck:false};
+  await B.set('hanjaRanks/'+freshUid,rank);
+  await assert.rejects(()=>A.deleteStudent(B,'old'),/관리자/);
+  // A separate teacher context represents another browser/device deleting a currently logged-in student.
+  const teacherSession=storage();teacherSession.setItem('studentAccountsTestUid','t');
+  const teacherContext=vm.createContext({window:{addEventListener(){},HANJA_FIREBASE_CONFIG:null,HANJA_DEMO_NAMESPACE:'studentAccountsTest'},localStorage,sessionStorage:teacherSession,fetch,console,queueMicrotask,setTimeout,Date});
+  for(const file of ['backend.js','student-accounts.js'])vm.runInContext(fs.readFileSync(path.join(root,'js',file),'utf8'),teacherContext);
+  const TB=teacherContext.window.Backend,TA=teacherContext.window.StudentAccounts;await TB.init();
+  await assert.rejects(()=>TA.deleteStudent(TB,'t'),/관리자/);
+  const beforeDelete=database();
+  await assert.rejects(()=>TA.deleteStudent({...TB,update:async()=>{throw new Error('offline')}},freshUid),/offline/);
+  assert.deepEqual(database(),beforeDelete,'failed deletion leaves roster and records intact');
+  await TA.deleteStudent(TB,freshUid);
+  assert(!database().users[freshUid]);assert(!database().hanja[freshUid]);assert(!database().hanjaRanks?.[freshUid]);
+  assert.deepEqual(database().users.old,seed.users.old);assert.deepEqual(database().hanja.old,seed.hanja.old);
+  windowEvents.storage({key:'studentAccountsTestDB'});
+  await settle(()=>window.App.S.screen==='login' && B.currentUid()===null);
+  assert.match(element('#login-notice').textContent,/등록이 해제/);
+  await login('fresh','changed-test');assert.equal(window.App.S.screen,'login');assert.equal(window.App.S.uid,null);
   console.log('PASS student accounts: import validation, leading-zero IDs, duplicate protection, partial-save recovery, fixed password, mandatory change, sign-out and fresh-login gate, existing student preservation');
+  console.log('PASS deletion: teacher only, atomic roster/progress/rank removal, retry safety, other students preserved, active session revoked, deleted student blocked');
 })().catch(error=>{console.error(error);process.exitCode=1});

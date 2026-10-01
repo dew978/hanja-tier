@@ -59,10 +59,21 @@
     $('#first-password-form').reset();
     $('#st-main').replaceChildren();$('#tc-main').replaceChildren();
   }
+  async function migrateSavedAssessments(uid,isTeacher,token) {
+    const records=isTeacher?(await B.get('hanja')||{}):{[uid]:await B.get('hanja/'+uid)};
+    for(const [student,raw] of Object.entries(records)){
+      if(token!==generation)return;
+      if(!S.users[student] || !raw?.baseline || raw.assessmentCreditVersion===1)continue;
+      const tx=await B.tx('hanja/'+student,current=>current?.baseline && current.assessmentCreditVersion!==1?E.migrateAssessment(current):undefined);
+      if(tx.committed)await B.set('hanjaRanks/'+student,E.summary(tx.value));
+    }
+  }
   async function startSession(uid, token, login) {
     const teacher=await B.get('config/teacher');
     const isTeacher=teacher===uid;
-    const users=await B.get('users')||{};
+    let users;
+    try {users=await B.get('users')||{};}
+    catch(error){if(!isTeacher && /권한|permission/i.test(error.message))throw new Error('등록된 학생 계정이 아니에요. 선생님에게 확인해 주세요.');throw error;}
     if(token!==generation)return;
     if(!isTeacher && !users[uid])throw new Error('등록된 학생 계정이 아니에요. 관리자에게 확인해 주세요.');
     Object.assign(S,{uid,isTeacher,users,passwordRequired:!isTeacher && !!users[uid]?.pwc});
@@ -80,9 +91,21 @@
         return;
       }
     }
+    await migrateSavedAssessments(uid,isTeacher,token);
+    if(token!==generation)return;
     show(isTeacher?'teacher':'student');
     $('#app-header').classList.remove('hidden');
-    const watch=(path,key,defaultValue)=>subscriptions.push(B.on(path,value=>{if(token!==generation)return;S[key]=value||defaultValue;render();}));
+    const revoked=()=>{
+      if(token!==generation || S.isTeacher)return;
+      ++generation;endSession();$('#app-header').classList.add('hidden');show('login');
+      $('#login-notice').textContent='학생 등록이 해제되었습니다. 선생님에게 확인해 주세요.';
+      B.signOut().catch(()=>{});
+    };
+    const watch=(path,key,defaultValue)=>subscriptions.push(B.on(path,value=>{
+      if(token!==generation)return;
+      if(key==='users' && !isTeacher && !value?.[uid]){revoked();return;}
+      S[key]=value||defaultValue;render();
+    },undefined,key==='users'?revoked:undefined));
     watch('users','users',{});watch('hanjaRanks','hanjaRanks',{});
     subscriptions.push(B.on('config/settings',value=>{if(token!==generation)return;S.config.settings=value||{};render();}));
     if(isTeacher)watch('hanja','profiles',{});else watch('hanja/'+uid,'hanja',null);

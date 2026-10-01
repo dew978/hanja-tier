@@ -28,6 +28,7 @@ jobs:
           node tests/stroke-practice.test.cjs
           node tests/pwa.test.cjs
           node tests/student-accounts.test.cjs
+          node tests/assessment-credit.test.cjs
       - uses: actions/configure-pages@v5
       - name: 공개 웹 파일만 준비
         run: |

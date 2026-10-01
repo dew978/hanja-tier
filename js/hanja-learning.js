@@ -64,7 +64,7 @@
   function rankingHtml() {
     const rows = E.ranking(S.users || {}, S.hanjaRanks || {}, rankTrack);
     return `<div class="panel hj-rank"><h3>우리 반 랭킹</h3><div class="hj-track-tabs"><button class="btn ${rankTrack === 'growth' ? 'primary' : ''}" data-track="growth">발전도</button><button class="btn ${rankTrack === 'absolute' ? 'primary' : ''}" data-track="absolute">절대 진도</button></div>
-      <p class="note">${rankTrack === 'growth' ? '첫 진단 대비 정답 증가 · 재확인 후 순위 반영 · 동점 공동 순위' : '통과 급수 → 뜻·음 확인 수 → 학습 진도 → 티어점수'}</p>
+      <p class="note">${rankTrack === 'growth' ? '첫 진단 대비 정답 증가 · 재확인 후 순위 반영 · 동점 공동 순위' : '인정한 한자 수 → 통과 급수 → 학습 완료 → 티어점수'}</p>
       <div class="hj-table-wrap"><table class="tbl"><thead><tr><th>순위</th><th>이름</th><th>${rankTrack === 'growth' ? '처음보다' : '통과 급수'}</th><th>${rankTrack === 'growth' ? '처음 → 지금' : '확인한 한자'}</th><th>티어점수</th></tr></thead><tbody>
       ${rows.map(r => `<tr class="${r.uid === S.uid ? 'hj-me' : ''}"><td>${r.rank}</td><td>${esc(r.name)}${r.uid === S.uid ? ' · 나' : ''}</td><td>${rankTrack === 'growth' ? `${r.growth >= 0 ? '+' : ''}${r.growth}문항 (${(r.growth / 30 * 100).toFixed(1)}%p)` : levelName(r.level)}</td><td>${rankTrack === 'growth' ? `${r.baseline} → ${r.current}/30` : `${r.mastered}/300자`}</td><td>${r.score}</td></tr>`).join('') || '<tr><td colspan="5" class="empty">학습 기록 없음</td></tr>'}</tbody></table></div></div>`;
   }
@@ -75,14 +75,15 @@
     const tier = E.tierOf(v.score);
     const readyRecheck = v.baseline && B.now() - (v.assessment || v.baseline).ts >= 7 * 86400000;
     main.innerHTML = `<div class="panel hj-banner"><span class="month-pill">한자 자율학습 · 8급부터 6급까지</span><h2 data-main-message>${esc(mainMessageForVisit())}</h2><p>뜻 · 음 · 획순 연습</p>
-      <div class="hj-stats"><div><small>한자 티어</small><strong>${tier.name}</strong><span>${v.score}점</span></div><div><small>통과 급수</small><strong>${levelName(v.level)}</strong><span>5단계 중 ${v.level}단계</span></div><div><small>학습 진도</small><strong>${v.learned}<small> / 300자</small></strong><span>뜻·음 확인 ${s.mastered}자</span></div><div><small>처음보다 성장</small><strong>${v.assessment ? (s.growth >= 0 ? '+' : '') + s.growth + '문항' : '측정 준비'}</strong><span>${v.baseline ? '처음 ' + v.baseline.right + '/30문항' : '첫 진단 전'}</span></div></div>
-      <div class="hj-progress"><i style="width:${v.learned / 3}%"></i></div><div class="hj-steps">${H.LEVELS.map((n,i) => `<span class="${i < v.level ? 'done' : i === v.level ? 'on' : ''}">${i < v.level ? '✓ ' : ''}${n}</span>`).join('')}</div></div>
-      ${!v.baseline ? `<div class="panel hj-focus"><span class="month-pill">첫 방문 · 약 10분</span><h3>첫 실력 진단</h3><p>8급·7급·6급 각 10문제씩, 뜻과 음 무작위 30문제</p><button class="btn primary lg" data-hj="baseline">처음 실력 확인</button></div>` : `
+      <div class="hj-stats"><div><small>한자 티어</small><strong>${tier.name}</strong><span>${v.score}점</span></div><div><small>통과 급수</small><strong>${levelName(v.level)}</strong><span>5단계 중 ${v.level}단계</span></div><div><small>절대 진도</small><strong>${s.mastered}<small> / 300자</small></strong><span>학습 완료 ${v.learned}자</span></div><div><small>처음보다 성장</small><strong>${v.assessment ? (s.growth >= 0 ? '+' : '') + s.growth + '문항' : '측정 준비'}</strong><span>${v.baseline ? '처음 ' + v.baseline.right + '/30문항' : '첫 진단 전'}</span></div></div>
+      <div class="hj-progress"><i style="width:${s.mastered / 3}%"></i></div><div class="hj-steps">${H.LEVELS.map((n,i) => `<span class="${i < v.level ? 'done' : i === v.level ? 'on' : ''}">${i < v.level ? '✓ ' : ''}${n}</span>`).join('')}</div></div>
+      ${!v.baseline ? `<div class="panel hj-focus"><span class="month-pill">첫 방문 · 약 10분</span><h3>첫 실력 진단</h3><p>8급·7급·6급 각 10문제씩, 뜻과 음 무작위 30문제</p><p class="note">새 정답 1자 = 절대 진도 1자 · +${E.ASSESSMENT_POINT}점</p><button class="btn primary lg" data-hj="baseline">처음 실력 확인</button></div>` : `
       <div class="grid2" style="margin-top:16px"><div class="panel"><h3><span class="ink-label" aria-hidden="true">學</span>오늘의 한자</h3><p><b>오늘 ${[...next.chars].length}자</b> · ${H.LEVELS[next.stage]} · ${d.done?'오늘 완료 ✓':'5자씩 학습'}</p><p class="note">${d.done?`오늘 +${d.reward}점 획득 · 하루 1회`:`4/5자 통과 → 다음 묶음 · 오늘 전체 완료 +${next.reward}점`}</p>
       <div class="hj-batches">${Array.from({length:E.batchCount(next)},(_,i)=>`<div class="hj-batch"><b>${i+1}묶음 · 5자</b><span class="note">${next.batches?.[i]?.passed||next.legacyCompleted?'통과 ✓':E.isBatchOpen(next,i)?'학습 가능':'앞 묶음 통과 필요'}</span><button class="btn ${i===E.nextBatch(next)?'primary':''}" data-hj="study" data-batch="${i}" ${E.isBatchOpen(next,i)?'':'disabled'}>${next.batches?.[i]?.passed||next.legacyCompleted?'복습':i===0?(started?'첫 5자 이어가기':'첫 5자 학습'):'다음 5자 학습'}</button></div>`).join('')}</div>
       <p class="note">하루 최대 10자 · 뜻·음 모두 정답 = 1자 통과</p>${next.legacyCompleted?'<p class="note">오늘 학습 완료 · 복습 가능</p>':''}</div>
       <div class="panel"><h3><span class="ink-label" aria-hidden="true">試</span>승급 시험</h3><p>${v.level >= 5 ? '6급까지 통과 완료' : `${H.LEVELS[v.level]} 도전 · ${Math.min(v.learned, H.BOUNDS[v.level])}/${H.BOUNDS[v.level]}자 학습`}</p><p class="note">뜻·음 쓰기 · 80% 이상 통과 · 획순 출제 없음<br>승급 +100점 · 급수별 1회</p><button class="btn good lg" data-hj="exam" ${!canExam || v.failDay === date() ? 'disabled' : ''}>${v.failDay === date() ? '내일 재도전' : '승급 시험 시작'}</button></div></div>
-      <div class="panel" style="margin-top:16px"><h3><span class="ink-label" aria-hidden="true">進</span>발전도 다시 확인</h3><p class="note">첫 진단과 동일한 30문항 · 7일마다 · 점수 차감 없음</p><button class="btn" data-hj="recheck" ${readyRecheck ? '' : 'disabled'}>${readyRecheck ? '이번 주 발전도 확인' : '다음 확인: ' + E.day((v.assessment || v.baseline).ts + 7 * 86400000)}</button></div>`}
+      <div class="panel" style="margin-top:16px"><h3><span class="ink-label" aria-hidden="true">進</span>발전도 다시 확인</h3><p class="note">8급·7급·6급 각 10문제 · 7일마다<br>새 한자 우선 · 새 정답 1자 +${E.ASSESSMENT_POINT}점 · 중복 인정 없음</p><button class="btn" data-hj="recheck" ${readyRecheck ? '' : 'disabled'}>${readyRecheck ? '이번 주 발전도 확인' : '다음 확인: ' + E.day((v.assessment || v.baseline).ts + 7 * 86400000)}</button></div>`}
+      ${v.creditReviewNeeded?`<div class="panel"><h3>이전 진단 한자 인정</h3><p class="note">이전 버전은 정답 수만 저장 · 한자별 기록을 위한 1회 확인</p><button class="btn" data-hj="credit-review">이전 진단 한자 다시 확인</button></div>`:''}
       ${rankingHtml()}<div class="panel" style="margin-top:16px"><h3><span class="ink-label" aria-hidden="true">書</span>오늘의 한자 책장</h3><p class="note">학습한 한자 · 뜻·음 · 예시 단어 5개</p><div class="hj-chars">${started ? E.visibleChars(d).map(h => `<button class="btn" data-char="${h}"><b>${h}</b></button>`).join('') : '<span class="note">학습 시작 후 열림</span>'}</div></div>
       <div class="panel" style="margin-top:16px"><h3>앱으로 설치하기</h3><p class="note">Chrome·Edge: 앱 설치<br>iPhone·iPad: Safari → 공유 → 홈 화면에 추가</p><button class="btn primary install-btn hidden" data-install="1">이 기기에 설치</button><p class="note">로그인·기록 저장: 인터넷 연결 필요</p></div>`;
     main.onclick = e => {
@@ -95,9 +96,9 @@
   async function start(mode,batchIndex) {
     const uid = S.uid, now = B.now(); let items, plan, lv;
     const tx = await B.tx('hanja/' + uid, raw => {
-      const v = mode==='study'?E.ensurePlan(raw,now):E.profile(raw);
-      if (mode === 'baseline') { if (v.baseline) throw new Error('처음 실력 확인은 이미 완료했어요.'); if (!v.baselinePlan) v.baselinePlan = E.diagnostic(); }
-      else if (!v.baseline) throw new Error('처음 실력 확인부터 해 주세요.');
+      const assessment=['baseline','recheck','credit-review'].includes(mode);
+      const v=assessment?E.prepareAssessment(raw,mode,now):mode==='study'?E.ensurePlan(raw,now):E.migrateAssessment(raw);
+      if(mode!=='baseline' && !v.baseline)throw new Error('처음 실력 확인부터 해 주세요.');
       if (mode === 'study') { const today=v.studyDays[E.day(now)];if(batchIndex===undefined)batchIndex=E.nextBatch(today);if(!E.isBatchOpen(today,batchIndex))throw new Error('앞 묶음에서 4자 이상 통과해 주세요.'); }
       if (mode === 'recheck' && now - (v.assessment || v.baseline).ts < 7 * 86400000) throw new Error('발전도 확인은 7일마다 할 수 있어요.');
       if (mode === 'exam' && (v.level >= 5 || v.learned < H.BOUNDS[v.level] || v.failDay === E.day(now))) throw new Error('지금은 승급 시험에 도전할 수 없어요.');
@@ -106,7 +107,7 @@
     const v = tx.value;
     if (mode === 'study') { plan = v.studyDays[E.day(now)]; items = E.shuffle(E.dailyItems(plan,batchIndex)); }
     else if (mode === 'exam') { lv = v.level; items = E.examItems(lv, A.settings().hanja.testCount[lv]); }
-    else items = E.shuffle(v.baselinePlan);
+    else items = E.shuffle(E.assessmentItems(v,mode));
     S.hanja=v;session = { uid, mode, plan, batchIndex, level: lv, date: E.day(now), items, answers: [], i: 0, card: 0, step: mode === 'study' ? 'cards' : 'quiz' }; redraw();
   }
   function header(title, pos, total) { return `<div class="a-head"><h2>${title}</h2><span class="sp"></span><button class="btn sm" id="hj-quit">그만하기</button></div><div class="hj-progress"><i style="width:${100 * pos / total}%"></i></div>`; }
@@ -161,7 +162,7 @@
     if (session.step === 'cards') return drawStudyCard(main);
     if (session.mode === 'study') return drawPairQuestion(main);
     const item=session.items[session.i], q=E.question(item.h,item.type,Math.random,session.mode==='exam'?H.LIST.slice(0,H.BOUNDS[session.level]):H.LIST);
-    const label={baseline:'처음 실력 확인',recheck:'발전도 확인',study:'오늘의 뜻·음 확인',exam:'승급 시험'}[session.mode];
+    const label={baseline:'처음 실력 확인',recheck:'발전도 확인','credit-review':'이전 진단 한자 확인',study:'오늘의 뜻·음 확인',exam:'승급 시험'}[session.mode];
     const written=session.mode==='exam';
     const questionPrompt=written?`${item.type==='hun'?'뜻':'음'} 쓰기`:(item.type==='hun'?'뜻을 고르세요.':'음을 고르세요.');
     main.innerHTML=`<div class="panel">${header(label+' · '+(session.i+1)+' / '+session.items.length,session.i,session.items.length)}<div class="hj-q"><p class="prompt${written?'':' prompt-choice'}">${questionPrompt}</p><div class="big">${item.h}</div>
@@ -179,10 +180,7 @@
       const v=E.profile(raw);
       if(s.mode==='study') {outcome=E.finishBatch(v,s.date,s.batchIndex,s.items,s.answers,now);return outcome.p;}
       if(s.mode==='exam') {outcome=E.finishExam(v,s.level,s.items,s.answers,now);return outcome.p;}
-      const g=E.grade(s.items,s.answers);
-      if(s.mode==='baseline') {if(v.baseline) throw new Error('이미 저장된 첫 진단을 유지합니다.');v.baseline={right:g.right,total:30,ts:now};}
-      else {if(now-(v.assessment||v.baseline).ts<7*86400000)throw new Error('이번 발전도 확인은 이미 저장됐어요.');v.assessment={right:g.right,total:30,ts:now};}
-      outcome={result:g,points:0,passed:true};return v;
+      outcome=E.finishAssessment(v,s.mode,s.items,s.answers,now);return outcome.p;
     });
     S.hanja=tx.value;s.outcome=outcome;s.committed=true;
     await publish(s.uid,tx.value);s.published=true;
@@ -193,14 +191,14 @@
     try { if(!s.committed) {if(!s.saving)s.saving=commit(s);await s.saving;} else if(!s.published){await publish(s.uid,p());s.published=true;} }
     catch(e) {s.saving=null;if(session!==s)return;main.innerHTML=`<div class="panel"><h3>${s.committed?'학습 저장 완료 · 순위 동기화 필요':'결과 저장 실패'}</h3><p>${esc(e.message)}</p><button class="btn primary" id="hj-save-retry">저장 다시 시도</button></div>`;$('#hj-save-retry').onclick=()=>result(main);return;}
     if(session!==s || S.tab!=='hanja')return;
-    const o=s.outcome,g=o.result,diagnostic=s.mode==='baseline'||s.mode==='recheck';
-    const msg=diagnostic?(s.mode==='baseline'?'첫 진단 완료 · 학습 시작 가능':'발전도 확인 완료') : o.passed?(o.points?`${s.mode==='exam'?'승급 시험 통과!':'오늘 학습 완료!'} +${o.points}점`:s.mode==='study'?(o.done?'복습 완료 · 오늘 보상 수령 완료':'묶음 통과 · 다음 5자 학습 가능'):'승급 시험 통과'):(s.mode==='study'?'통과 기준 4/5자 · 같은 묶음 재도전':'통과 기준 80% · 내일 재도전');
-    main.innerHTML=`<div class="panel hj-result"><span class="ink-result-mark" aria-hidden="true">${o.passed?'成':'習'}</span><h2>${g.right} / ${g.total}${s.mode==='study'?'자 통과':' 정답'} · ${Math.round(g.percent)}%</h2><p>${msg}</p>${diagnostic?'':`<div class="hj-chars">${g.marked.filter(x=>!x.correct).map(q=>`<div><b>${q.h}</b><span>${esc(H.BY[q.h].hun+' '+H.BY[q.h].eum)}</span></div>`).join('')}</div>`}<div class="foot">${s.mode==='study'&&!o.passed?'<button class="btn primary" id="hj-retry">이 5자 다시 학습</button>':''}${s.mode==='study'&&o.next!==null&&o.next!==undefined?'<button class="btn primary" id="hj-next-batch">다음 5자 학습</button>':''}<button class="btn" id="hj-home">한자 홈으로</button></div></div>`;
+    const o=s.outcome,g=o.result,diagnostic=['baseline','recheck','credit-review'].includes(s.mode);
+    const msg=diagnostic?`새로 인정 ${[...o.newChars].length}자 · +${o.points}점 · 절대 진도 ${o.recognized}/300자` : o.passed?(o.points?`${s.mode==='exam'?'승급 시험 통과!':'오늘 학습 완료!'} +${o.points}점`:s.mode==='study'?(o.done?'복습 완료 · 오늘 보상 수령 완료':'묶음 통과 · 다음 5자 학습 가능'):'승급 시험 통과'):(s.mode==='study'?'통과 기준 4/5자 · 같은 묶음 재도전':'통과 기준 80% · 내일 재도전');
+    main.innerHTML=`<div class="panel hj-result"><span class="ink-result-mark" aria-hidden="true">${o.passed?'成':'習'}</span><h2>${g.right} / ${g.total}${s.mode==='study'?'자 통과':' 정답'} · ${Math.round(g.percent)}%</h2><p>${msg}</p>${diagnostic?'<p class="note">이미 인정한 한자는 중복 가산되지 않습니다.</p>':`<div class="hj-chars">${g.marked.filter(x=>!x.correct).map(q=>`<div><b>${q.h}</b><span>${esc(H.BY[q.h].hun+' '+H.BY[q.h].eum)}</span></div>`).join('')}</div>`}<div class="foot">${s.mode==='study'&&!o.passed?'<button class="btn primary" id="hj-retry">이 5자 다시 학습</button>':''}${s.mode==='study'&&o.next!==null&&o.next!==undefined?'<button class="btn primary" id="hj-next-batch">다음 5자 학습</button>':''}<button class="btn" id="hj-home">한자 홈으로</button></div></div>`;
     $('#hj-home').onclick=()=>{session=null;redraw();};const retry=$('#hj-retry');if(retry)retry.onclick=()=>guarded(()=>start('study',s.batchIndex));
     const next=$('#hj-next-batch');if(next)next.onclick=()=>guarded(()=>start('study',o.next));
 
   }
   let syncKey='';
-  function sync() {if(!S.uid||S.isTeacher||!p().baseline)return;const key=S.uid+JSON.stringify(E.summary(p()));if(key===syncKey)return;syncKey=key;publish(S.uid,p()).catch(()=>{syncKey='';});}
+  function sync() {if(!S.uid||S.isTeacher||S.passwordRequired||!p().baseline)return;const key=S.uid+JSON.stringify(E.summary(p()));if(key===syncKey)return;syncKey=key;publish(S.uid,p()).catch(()=>{syncKey='';});}
   window.HanjaStudy={viewChar,homeNotice,homeBlockedMessage,goHome,render(main){render(main);sync();},reset(){stopWriter();mainMessage=null;session=null;lastKey='';syncKey='';busy=false;rankTrack='growth';}};
 })();

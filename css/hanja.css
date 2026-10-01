@@ -195,3 +195,6 @@ a.btn { display:inline-flex; align-items:center; justify-content:center; text-de
 #first-password-form .lg { width:100%; white-space:normal; }
 #scr-first-password .auth-card { width:min(100%,490px); }
 @media(max-width:520px) { .student-import { padding:18px; gap:16px; } .student-import-actions { width:100%; } .student-import-actions .btn { width:100%; } }
+
+.btn.danger { color:#853f30; border-color:#ad8175; }
+.btn.danger:hover { background:#f1e1d9; }

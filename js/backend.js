@@ -233,6 +233,9 @@
     function notify() {
       const db = load();
       for (const l of listeners) {
+        if (!readOk(l.ps,l.q)) {
+          l.active=false;listeners.delete(l);queueMicrotask(()=>l.onError?.(permError()));continue;
+        }
         const v = applyQuery(getAt(db, l.ps), l.q);
         const s = JSON.stringify(v);
         // 백그라운드 탭에서 setTimeout이 지연되지 않도록 마이크로태스크 사용
@@ -279,10 +282,10 @@
       async set(path, val) { commit([[parts(path), val]]); },
       async update(path, obj) { commit(Object.entries(obj).map(([k, v]) => [parts(path).concat(parts(k)), v])); },
       async remove(path) { commit([[parts(path), null]]); },
-      on(path, cb, q) {
+      on(path, cb, q, onError) {
         const ps = parts(path);
-        if (!readOk(ps, q)) { console.warn('[데모 보안 규칙] 읽기 거부(구독):', path, q || ''); return () => {}; }
-        const l = { ps, q, cb, last: undefined, active: true };
+        if (!readOk(ps, q)) { console.warn('[데모 보안 규칙] 읽기 거부(구독):', path, q || '');queueMicrotask(()=>onError?.(permError()));return () => {}; }
+        const l = { ps, q, cb, onError, last: undefined, active: true };
         listeners.add(l);
         const v = applyQuery(getAt(load(), l.ps), q);
         l.last = JSON.stringify(v);
@@ -436,9 +439,9 @@
       async set(path, val) { try { await db.ref(path).set(clone(val)); } catch (e) { throw koErr(e); } },
       async update(path, obj) { try { await db.ref(path || '/').update(clone(obj)); } catch (e) { throw koErr(e); } },
       async remove(path) { try { await db.ref(path).remove(); } catch (e) { throw koErr(e); } },
-      on(path, cb, q) {
+      on(path, cb, q, onError) {
         const ref = Q(db.ref(path), q);
-        const h = ref.on('value', (s) => cb(s.val()), (e) => console.warn('listen', path, e));
+        const h = ref.on('value', (s) => cb(s.val()), (e) => {if(onError)onError(koErr(e));else console.warn('listen',path,e);});
         return () => ref.off('value', h);
       },
       async tx(path, fn) {
