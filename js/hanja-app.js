@@ -75,7 +75,7 @@
   }
   async function install() {
     if(installPrompt){await installPrompt.prompt();const choice=await installPrompt.userChoice;installPrompt=null;if(choice.outcome==='accepted')toast('설치 후 홈 화면에서 한자 티어를 열 수 있어요.');return;}
-    modal('<h3>한자 티어 앱 설치</h3><p>Chrome·Edge: 주소창의 설치 아이콘 또는 메뉴 → 앱 설치를 선택해 주세요.</p><p>iPhone·iPad: Safari의 공유 → 홈 화면에 추가를 선택해 주세요.</p><p class="note">설치 후에도 로그인과 학습 기록 저장에는 인터넷 연결이 필요해요.</p><div class="foot"><button class="btn primary" data-close>확인</button></div>');
+    modal('<h3>한자 티어 앱 설치</h3><p>Chrome·Edge: 주소창 설치 아이콘 / 메뉴 → 앱 설치</p><p>iPhone·iPad: Safari → 공유 → 홈 화면에 추가</p><p class="note">로그인·기록 저장: 인터넷 연결 필요</p><div class="foot"><button class="btn primary" data-close>확인</button></div>');
   }
   function passwordDialog() {
     const m=modal('<h3>비밀번호 변경</h3><form id="password-form"><label>새 비밀번호<input name="pw" type="password" minlength="6" maxlength="100" autocomplete="new-password" required></label><label>새 비밀번호 확인<input name="again" type="password" minlength="6" autocomplete="new-password" required></label><p class="err" role="alert"></p><div class="foot"><button type="button" class="btn" data-close>취소</button><button type="submit" class="btn primary">변경</button></div></form>');

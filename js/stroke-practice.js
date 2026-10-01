@@ -54,14 +54,14 @@
       svg.onpointerup=e=>{
         if(e.pointerId!==pointer||disposed)return;e.preventDefault();points.push(point(e));pointer=null;
         const accepted=matchStroke(points,guides[index]);points=[];
-        if(!accepted){draw('획의 시작점에서 안내선을 따라 끝까지 써 주세요. 순서와 방향도 확인해요.');return;}
+        if(!accepted){draw('시작점 → 안내선 끝 · 획순·방향 확인');return;}
         index++;
         if(index===data.strokes.length){round++;index=0;}
-        draw(round===2?'획순에 맞게 두 번 완성했어요.':index===0?'한 번 완성했어요! 같은 획순으로 한 번 더 써 보세요.':undefined);
+        draw(round===2?'획순 연습 2회 완료':index===0?'1회 완료 · 같은 획순으로 1회 더':undefined);
         if(round===2)options.onComplete?.();
       };
-      svg.onpointercancel=()=>{pointer=null;points=[];draw('손을 떼었어요. 지금 획부터 다시 써 주세요.');};
-      status(message||(demo!==null?`획순 시범 · ${demo}/${data.strokes.length}획 (연습 횟수에는 포함되지 않아요)`:`${round}/2회 완료 · ${done?'연습 완료':`${index+1}/${data.strokes.length}획 · 동그라미에서 시작해요`}`));
+      svg.onpointercancel=()=>{pointer=null;points=[];draw('현재 획부터 다시 쓰기');};
+      status(message||(demo!==null?`획순 시범 · ${demo}/${data.strokes.length}획 (연습 횟수 제외)`:`${round}/2회 완료 · ${done?'연습 완료':`${index+1}/${data.strokes.length}획 · 동그라미에서 시작`}`));
       options.onProgress?.({round,index,total:data.strokes.length});
     }
     function cancelDemo(){if(timer)clearInterval(timer);timer=null;demo=null;pointer=null;points=[];}

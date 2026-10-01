@@ -11,7 +11,7 @@
   <link rel="manifest" href="preview.webmanifest">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="icon" type="image/png" href="icons/icon-192.png">
-  <link rel="stylesheet" href="css/hanja.css?v=batch-1">
+  <link rel="stylesheet" href="css/hanja.css?v=copy-1">
   <link rel="stylesheet" href="css/ink-theme.css?v=ink-1">
   <title>한자 티어</title>
 </head>
@@ -23,11 +23,11 @@
     <button class="btn ghost sm" data-password>비밀번호 변경</button>
     <button class="btn ghost sm" data-logout>로그아웃</button>
   </header>
-  <section id="scr-loading" class="screen center"><span class="brand-mark large">學</span><p id="loading-msg" class="muted" role="status">한자 학습을 준비하고 있어요…</p></section>
+  <section id="scr-loading" class="screen center"><span class="brand-mark large">學</span><p id="loading-msg" class="muted" role="status">학습 준비 중…</p></section>
   <section id="scr-login" class="screen center hidden">
-    <div class="auth-card"><span class="brand-mark large" aria-hidden="true">學</span><h1>한자 티어</h1><p class="muted">뜻을 알고, 소리를 읽고, 손으로 익혀요.</p><div class="login-chars" aria-hidden="true">學 文 字</div><p class="note">한자 8급 → 6급 · 하루 최대 10자 · 5자씩 학습</p>
+    <div class="auth-card"><span class="brand-mark large" aria-hidden="true">學</span><h1>한자 티어</h1><p class="muted">뜻 · 음 · 획순 연습</p><div class="login-chars" aria-hidden="true">學 文 字</div><p class="note">한자 8급 → 6급 · 하루 최대 10자 · 5자씩 학습</p>
       <form id="login-form"><label>아이디<input id="login-id" autocomplete="username" autocapitalize="none" spellcheck="false" required></label><label>비밀번호<input id="login-pw" type="password" autocomplete="current-password" required></label><button class="btn primary lg" type="submit">한자 학습 입장</button><p id="login-err" class="err" role="alert"></p></form>
-      <button class="btn ghost" data-install>이 기기에 앱 설치</button><p class="note">학생은 관리자가 알려 준 계정으로 로그인해 주세요.</p><p class="demo-note hidden" id="demo-note">학습 화면 체험 중 · 기록은 이 브라우저에만 저장됩니다.</p>
+      <button class="btn ghost" data-install>이 기기에 앱 설치</button><p class="note">선생님이 발급한 계정으로 로그인</p><p class="demo-note hidden" id="demo-note">체험 모드 · 현재 브라우저에만 저장</p>
     </div>
   </section>
   <section id="scr-setup" class="screen center hidden"><div class="auth-card"><span class="brand-mark large">學</span><h1>한자 티어 처음 설정</h1><p class="note">관리자 아이디: master</p><form id="setup-form"><label>반 이름<input id="setup-class" maxlength="50" required></label><label>관리자 비밀번호<input id="setup-pw" type="password" minlength="6" autocomplete="new-password" required></label><button class="btn primary" type="submit">시작하기</button><p id="setup-err" class="err" role="alert"></p></form></div></section>
@@ -38,10 +38,10 @@
   <script src="js/hanja.js"></script>
   <script src="js/hanja-engine.js?v=batch-1"></script>
   <script src="js/backend.js"></script>
-  <script src="js/hanja-app.js?v=batch-1"></script>
+  <script src="js/hanja-app.js?v=copy-1"></script>
   <script src="js/hanja-strokes.js?v=batch-1"></script>
-  <script src="js/stroke-practice.js?v=batch-1"></script>
-  <script src="js/hanja-learning.js?v=ink-1"></script>
-  <script src="js/hanja-admin.js?v=batch-1"></script>
+  <script src="js/stroke-practice.js?v=copy-1"></script>
+  <script src="js/hanja-learning.js?v=copy-1"></script>
+  <script src="js/hanja-admin.js?v=copy-1"></script>
 </body>
 </html>
