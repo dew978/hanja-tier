@@ -4,7 +4,7 @@
   const $ = s => document.querySelector(s);
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const S = { uid:null, isTeacher:false, tab:'hanja', hanja:null, hanjaRanks:{}, users:{}, profiles:{}, config:{} };
-  let subscriptions = [], generation = 0, settingUp = false, installPrompt = null;
+  let subscriptions = [], generation = 0, settingUp = false, installPrompt = null, homeDialogOpen = false;
   function toast(msg, kind='') {
     const el = document.createElement('div'); el.className='toast '+kind; el.textContent=msg;
     $('#toast-root').append(el); setTimeout(()=>el.remove(),4500);
@@ -34,7 +34,25 @@
     else window.HanjaStudy?.render($('#st-main'));
     syncInstall();
   }
+  async function requestHome() {
+    if (!S.uid || homeDialogOpen) return;
+    const blocked = !S.isTeacher && window.HanjaStudy?.homeBlockedMessage();
+    if (blocked) { toast(blocked); return; }
+    const token = generation;
+    const notice = S.isTeacher ? '학습 현황 화면으로 이동합니다.' : window.HanjaStudy.homeNotice();
+    homeDialogOpen = true;
+    try {
+      if (!await confirmBox('메인화면으로 돌아갈까요?', notice, '돌아가기')) return;
+      if (token !== generation || !S.uid) return;
+      if (S.isTeacher) {
+        window.HanjaAdmin.reset();
+        render();
+        window.scrollTo(0, 0);
+      } else window.HanjaStudy.goHome();
+    } finally { homeDialogOpen = false; }
+  }
   function endSession() {
+    homeDialogOpen = false;
     subscriptions.forEach(off=>off()); subscriptions=[];
     window.HanjaStudy?.reset();window.HanjaAdmin?.reset();$('#modal-root').replaceChildren();
     Object.assign(S,{uid:null,isTeacher:false,hanja:null,hanjaRanks:{},users:{},profiles:{},config:{},tab:'hanja'});
@@ -81,13 +99,13 @@
     const m=modal('<h3>비밀번호 변경</h3><form id="password-form"><label>새 비밀번호<input name="pw" type="password" minlength="6" maxlength="100" autocomplete="new-password" required></label><label>새 비밀번호 확인<input name="again" type="password" minlength="6" autocomplete="new-password" required></label><p class="err" role="alert"></p><div class="foot"><button type="button" class="btn" data-close>취소</button><button type="submit" class="btn primary">변경</button></div></form>');
     const form=m.el.querySelector('form');form.onsubmit=e=>{e.preventDefault();submitForm(form,async()=>{if(form.elements.pw.value!==form.elements.again.value)throw new Error('비밀번호가 서로 달라요.');await B.changeOwnPassword(form.elements.pw.value);m.close();toast('비밀번호를 변경했어요.');},form.querySelector('.err'));};
   }
-  window.App={S,B,$,esc,toast,modal,confirmBox,settings,render,syncInstall,submitForm};
+  window.App={S,B,$,esc,toast,modal,confirmBox,settings,render,syncInstall,submitForm,requestHome};
   document.addEventListener('DOMContentLoaded',async()=>{
     $('#login-form').onsubmit=e=>{e.preventDefault();submitForm(e.target,()=>B.signIn($('#login-id').value.trim().toLowerCase(),$('#login-pw').value),$('#login-err'));};
     $('#setup-form').onsubmit=e=>{e.preventDefault();submitForm(e.target,async()=>{
       settingUp=true;try{const uid=await B.signUpSelf('master',$('#setup-pw').value);const result=await B.tx('config/teacher',current=>current?undefined:uid);if(!result.committed)throw new Error('이미 관리자 계정이 있어요.');await B.set('config/className',$('#setup-class').value.trim());await B.set('config/teacherName','관리자');settingUp=false;await authChanged(uid);}finally{settingUp=false;}
     },$('#setup-err'));};
-    document.addEventListener('click',e=>{if(e.target.closest('[data-install]'))install();if(e.target.closest('[data-logout]'))B.signOut().catch(err=>toast(err.message,'bad'));if(e.target.closest('[data-password]'))passwordDialog();});
+    document.addEventListener('click',e=>{if(e.target.closest('[data-home]'))requestHome();if(e.target.closest('[data-install]'))install();if(e.target.closest('[data-logout]'))B.signOut().catch(err=>toast(err.message,'bad'));if(e.target.closest('[data-password]'))passwordDialog();});
     document.addEventListener('hanja-rendered',syncInstall);
     window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e;syncInstall();});
     window.addEventListener('appinstalled',syncInstall);

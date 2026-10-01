@@ -110,7 +110,18 @@
     S.hanja=v;session = { uid, mode, plan, batchIndex, level: lv, date: E.day(now), items, answers: [], i: 0, card: 0, step: mode === 'study' ? 'cards' : 'quiz' }; redraw();
   }
   function header(title, pos, total) { return `<div class="a-head"><h2>${title}</h2><span class="sp"></span><button class="btn sm" id="hj-quit">그만하기</button></div><div class="hj-progress"><i style="width:${100 * pos / total}%"></i></div>`; }
-  function bindQuit() { $('#hj-quit').onclick = async () => { if (await A.confirmBox('학습 종료', '학습 묶음 유지 · 진행 중인 테스트는 처음부터 재시작', '돌아가기')) { session = null; redraw(); } }; }
+  function bindQuit() { $('#hj-quit').onclick = A.requestHome; }
+  function homeNotice() {
+    if (session?.step === 'quiz') return '시험 중간에 나가면 처음부터 다시 풀어야 합니다.';
+    if (session?.step === 'cards') return '저장된 학습 기록은 유지됩니다.';
+    return '메인화면으로 이동합니다.';
+  }
+  function homeBlockedMessage() {
+    if (busy) return '학습 준비 중입니다. 잠시 후 다시 시도해 주세요.';
+    if (session?.step === 'result' && !session.committed) return '결과 저장 후 이동할 수 있습니다. 저장 상태를 확인해 주세요.';
+    return '';
+  }
+  function goHome() { session = null; redraw(); }
   function drawStudyCard(main) {
     const s=session,chars=E.batchChars(s.plan,s.batchIndex),x=H.BY[chars[s.card]],saved=s.plan.practice?.[x.h]?.count===2;
     main.innerHTML=`<div class="panel">${header((s.batchIndex+1)+'묶음 · '+(s.card+1)+' / 5자',s.card,5)}<div class="hj-card hj-writing-card"><div class="hj-writing"><div id="hj-stroke-board" class="hj-stroke-board"></div><p id="hj-write-count" class="month-pill">${saved?2:0}/2회 완료</p><div class="hj-writing-actions"><button class="btn sm" id="hj-demo">획순 시범 보기</button><button class="btn sm" id="hj-restart">다시 두 번 쓰기</button></div></div><div class="hj-info"><span class="month-pill">${x.levelName}</span><div class="hun">${esc(x.hun)} ${esc(x.eum)}</div><p class="note">동그라미 → 안내선 · 획순·방향대로 <b>2회</b> 완성</p>${words(x)}</div></div><p id="hj-write-msg" class="note" role="status" aria-live="polite"></p><div class="foot"><button class="btn hidden" id="hj-save-writing">쓰기 기록 저장 다시 시도</button><button class="btn primary" id="hj-next" ${saved?'':'disabled'}>${s.card<4?'다음 한자':'5자 뜻·음 확인하기'}</button></div></div>`;
@@ -191,5 +202,5 @@
   }
   let syncKey='';
   function sync() {if(!S.uid||S.isTeacher||!p().baseline)return;const key=S.uid+JSON.stringify(E.summary(p()));if(key===syncKey)return;syncKey=key;publish(S.uid,p()).catch(()=>{syncKey='';});}
-  window.HanjaStudy={viewChar,render(main){render(main);sync();},reset(){stopWriter();mainMessage=null;session=null;lastKey='';syncKey='';busy=false;rankTrack='growth';}};
+  window.HanjaStudy={viewChar,homeNotice,homeBlockedMessage,goHome,render(main){render(main);sync();},reset(){stopWriter();mainMessage=null;session=null;lastKey='';syncKey='';busy=false;rankTrack='growth';}};
 })();
