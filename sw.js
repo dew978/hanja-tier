@@ -1,6 +1,6 @@
 /* Installable PWA; cache only the application assets inside this project scope. */
 const PREFIX = 'hanja-tier-pwa:' + new URL(self.registration.scope).pathname + ':';
-const CACHE = PREFIX + 'v9';
+const CACHE = PREFIX + 'v10';
 const ASSETS = [
   "./",
   "./index.html",
@@ -14,7 +14,7 @@ const ASSETS = [
   "./js/hanja-engine.js?v=batch-1",
   "./js/backend.js",
   "./js/hanja-app.js?v=copy-1",
-  "./js/hanja-learning.js?v=copy-1",
+  "./js/hanja-learning.js?v=messages-1",
   "./js/hanja-admin.js?v=copy-1",
   "./js/hanja-strokes.js?v=batch-1",
   "./js/stroke-practice.js?v=copy-1",

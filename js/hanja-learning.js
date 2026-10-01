@@ -2,28 +2,51 @@
 (function () {
   const A = window.App, { S, B, $, esc, toast } = A;
   const H = window.Hanja, E = window.HanjaEngine;
-  // Add the teacher's chosen messages here; all learners see the same message each hour.
-  const MAIN_MESSAGES = ['매일 조금씩, 나만의 속도로'];
-  const HOUR = 60 * 60 * 1000;
-  let messageTimer = null;
-  function refreshMainMessage() {
-    clearTimeout(messageTimer);
-    messageTimer = null;
-    const heading = $('#st-main [data-hourly-message]');
-    if (!heading || document.hidden) return;
-    const now = B.now();
-    heading.textContent = MAIN_MESSAGES[Math.floor((now + 9 * HOUR) / HOUR) % MAIN_MESSAGES.length];
-    if (MAIN_MESSAGES.length > 1) messageTimer = setTimeout(refreshMainMessage, HOUR - now % HOUR + 50);
+  const MAIN_MESSAGES = [
+    '하루 한 자, 차곡차곡 쌓이는 지혜',
+    '매일 만나는 한자, 매일 커지는 생각',
+    '작은 글자가 모여 만드는 우리의 큰 배움',
+    '한 걸음씩 다가가는 재미있는 한자의 세계',
+    '다 함께 한 자 한 자, 즐거운 우리 반 한자 시간',
+    '친구들과 함께 키워가는 우리 반 한자 나무',
+    '우리가 힘을 모아 완성하는 한자 퍼즐',
+    '함께 읽고 쓰는 우리 반의 든든한 한자 실력',
+    '한자를 알면 우리말이 더 쉬워져요!',
+    '글자 속에 숨은 깊은 뜻, 오늘 함께 찾아볼까요?',
+    '생각의 깊이를 더해주는 든든한 한자 길잡이',
+    '알수록 재밌는 한자 탐험',
+    '한자, 아는 만큼 넓어지는 세상',
+    '머릿속 한자 창고, 오늘도 든든하게 채워요!'
+  ];
+  const messageKey = 'hanja-tier:main-message:' + new URL('.', location.href).pathname;
+  let mainMessage = null, lastMessageIndex = -1;
+  function mainMessageForVisit() {
+    if (mainMessage !== null) return mainMessage;
+    // Advance once per visit, not on ranking updates or other home-screen redraws.
+    let previous = lastMessageIndex;
+    for (const storageName of ['localStorage', 'sessionStorage']) {
+      try {
+        const saved = window[storageName].getItem(messageKey);
+        if (saved !== null && /^(0|[1-9]\d*)$/.test(saved) && Number(saved) < MAIN_MESSAGES.length) {
+          previous = Number(saved);
+          break;
+        }
+      } catch (_) { /* Storage may be unavailable in private or restricted browsers. */ }
+    }
+    lastMessageIndex = (previous + 1) % MAIN_MESSAGES.length;
+    for (const storageName of ['localStorage', 'sessionStorage']) {
+      try { window[storageName].setItem(messageKey, String(lastMessageIndex)); } catch (_) {}
+    }
+    mainMessage = MAIN_MESSAGES[lastMessageIndex];
+    return mainMessage;
   }
-  document.addEventListener('visibilitychange', refreshMainMessage);
-  window.addEventListener('focus', refreshMainMessage);
   let session = null, lastKey = '', rankTrack = 'growth', busy = false, writer = null;
   const p = () => E.profile(S.hanja);
   const date = () => E.day(B.now());
   const levelName = n => n ? H.LEVELS[n - 1] : '도전 중';
   const words = x => `<div class="hj-words">${x.words.map(w => `<div><b>${[...w.word].map(c => c === x.h ? `<em>${esc(c)}</em>` : esc(c)).join('')}</b><span class="rd">${esc(w.read)}</span>${w.mean ? `<span class="mn">${esc(w.mean)}</span>` : ''}</div>`).join('')}</div>`;
   function stopWriter(){writer?.destroy();writer=null;}
-  function redraw() { stopWriter(); clearTimeout(messageTimer); messageTimer = null; lastKey = ''; const main = $('#st-main'); if (!main) return; main.dataset.tab = 'hanja'; if (session) drawSession(main); else home(main); window.scrollTo(0,0); }
+  function redraw() { stopWriter(); lastKey = ''; const main = $('#st-main'); if (!main) return; main.dataset.tab = 'hanja'; if (session) drawSession(main); else home(main); window.scrollTo(0,0); }
   function render(main) {
     const key = JSON.stringify([S.uid, S.hanja, S.hanjaRanks, S.users, date(), rankTrack]);
     if (main.dataset.tab === 'hanja' && (session || key === lastKey)) return;
@@ -51,7 +74,7 @@
     const canExam = v.baseline && v.level < 5 && v.learned >= H.BOUNDS[v.level];
     const tier = E.tierOf(v.score);
     const readyRecheck = v.baseline && B.now() - (v.assessment || v.baseline).ts >= 7 * 86400000;
-    main.innerHTML = `<div class="panel hj-banner"><span class="month-pill">한자 자율학습 · 8급부터 6급까지</span><h2 data-hourly-message></h2><p>뜻 · 음 · 획순 연습</p>
+    main.innerHTML = `<div class="panel hj-banner"><span class="month-pill">한자 자율학습 · 8급부터 6급까지</span><h2 data-main-message>${esc(mainMessageForVisit())}</h2><p>뜻 · 음 · 획순 연습</p>
       <div class="hj-stats"><div><small>한자 티어</small><strong>${tier.name}</strong><span>${v.score}점</span></div><div><small>통과 급수</small><strong>${levelName(v.level)}</strong><span>5단계 중 ${v.level}단계</span></div><div><small>학습 진도</small><strong>${v.learned}<small> / 300자</small></strong><span>뜻·음 확인 ${s.mastered}자</span></div><div><small>처음보다 성장</small><strong>${v.assessment ? (s.growth >= 0 ? '+' : '') + s.growth + '문항' : '측정 준비'}</strong><span>${v.baseline ? '처음 ' + v.baseline.right + '/30문항' : '첫 진단 전'}</span></div></div>
       <div class="hj-progress"><i style="width:${v.learned / 3}%"></i></div><div class="hj-steps">${H.LEVELS.map((n,i) => `<span class="${i < v.level ? 'done' : i === v.level ? 'on' : ''}">${i < v.level ? '✓ ' : ''}${n}</span>`).join('')}</div></div>
       ${!v.baseline ? `<div class="panel hj-focus"><span class="month-pill">첫 방문 · 약 10분</span><h3>첫 실력 진단</h3><p>8급·7급·6급 각 10문제씩, 뜻과 음 무작위 30문제</p><button class="btn primary lg" data-hj="baseline">처음 실력 확인</button></div>` : `
@@ -67,7 +90,6 @@
       const c = e.target.closest('[data-char]'); if (c) { viewChar(c.dataset.char); return; }
       const b = e.target.closest('[data-hj]'); if (b && !b.disabled) guarded(() => start(b.dataset.hj,b.dataset.batch===undefined?undefined:Number(b.dataset.batch)));
     };
-    refreshMainMessage();
     document.dispatchEvent(new CustomEvent('hanja-rendered'));
   }
   async function start(mode,batchIndex) {
@@ -168,5 +190,5 @@
   }
   let syncKey='';
   function sync() {if(!S.uid||S.isTeacher||!p().baseline)return;const key=S.uid+JSON.stringify(E.summary(p()));if(key===syncKey)return;syncKey=key;publish(S.uid,p()).catch(()=>{syncKey='';});}
-  window.HanjaStudy={viewChar,render(main){render(main);sync();},reset(){stopWriter();clearTimeout(messageTimer);messageTimer=null;session=null;lastKey='';syncKey='';busy=false;rankTrack='growth';}};
+  window.HanjaStudy={viewChar,render(main){render(main);sync();},reset(){stopWriter();mainMessage=null;session=null;lastKey='';syncKey='';busy=false;rankTrack='growth';}};
 })();
