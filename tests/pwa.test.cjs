@@ -16,7 +16,7 @@ async function main() {
   const scriptFiles=[...index.matchAll(/src="(js\/[^"]+)"/g)].map(m=>m[1].split('?')[0]);
   assert.deepEqual(scriptFiles,['js/firebase-config.js','js/hanja.js','js/hanja-engine.js','js/backend.js','js/hanja-app.js','js/hanja-strokes.js','js/stroke-practice.js','js/hanja-learning.js','js/hanja-admin.js']);
   for(const name of ['app','teacher','tier','tracks','econ','econ-student','econ-teacher','board','quest','media','prices','importer','xlsx-lite'])assert.equal(fs.existsSync(path.join(root,'js',name+'.js')),false,'Unrelated module remains: '+name);
-  const ui=index+read('js/hanja-app.js')+read('js/hanja-admin.js')+read('js/hanja-strokes.js','js/stroke-practice.js','js/hanja-learning.js');
+  const ui=index+read('js/hanja-app.js')+read('js/hanja-admin.js')+read('js/hanja-learning.js');
   assert.doesNotMatch(ui,/경제|퀘스트|리코더|타자|생활 티어|entries\//);
   assert.deepEqual(Object.keys(JSON.parse(read('database.rules.json')).rules).sort(),['config','hanja','hanjaRanks','users']);
   assert.equal(manifest.prefer_related_applications, false);
@@ -32,7 +32,7 @@ async function main() {
   assert.match(read('index.html'), /rel="manifest"[^>]*href="manifest.webmanifest"/);
 
   const handlers = {}, entries = new Map(), deleted = [];
-  const cacheName = 'hanja-tier-pwa:/hanja-tier/:v7';
+  const cacheName = 'hanja-tier-pwa:/hanja-tier/:v8';
   let online = true, fetched = 0, claimed = false;
   const response = label => ({ ok: true, label, clone() { return response(label); } });
   const normalize = request => new URL(typeof request === 'string' ? request : request.url, scope).href;

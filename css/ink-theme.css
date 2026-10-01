@@ -1,0 +1,124 @@
+/* 수묵 산수: 짙은 먹과 옅은 안개, 손으로 그린 소나무와 산. */
+:root {
+  --bg: #d9d8cd;
+  --card: #f5f3eb;
+  --card2: #e6e6da;
+  --line: #9c9f91;
+  --text: #282f2b;
+  --muted: #596155;
+  --accent: #343e36;
+  --accent2: #56634e;
+  --good: #455b47;
+  --bad: #913e35;
+  --c-gold: #6b5837;
+  --landscape: url("../assets/ink-landscape-v1.png");
+}
+html { background: var(--bg); }
+body {
+  background-color: var(--bg);
+  background-image: linear-gradient(#e5e5dc26,#e5e5dc26),var(--landscape);
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+::selection { background: #bdc7b5; color: #252d27; }
+.topbar {
+  background-color: #2e3730;
+  background-image: var(--paper-grain),linear-gradient(100deg,#202a23,#475046);
+  border-bottom: 3px double #777e69;
+  color: #faf5e8;
+  box-shadow: 0 4px 18px #18201b30;
+}
+.topbar .top-me { color: #e4e6d7; }
+.topbar .btn { color: #f0eedf; background: #ffffff08; border-color: #8c9684; }
+.topbar .btn:hover { background: #faf8ee1c; border-color: #e0e3d1; }
+.brand { letter-spacing: .12em; }
+.brand-mark { background: #843e35; outline-color: #843e35; border-color: #e5d7bd; border-radius: 1px 3px 1px 2px; box-shadow: inset 0 0 0 1px #b98877; }
+.page { padding-top: 30px; }
+.admin-tabs { gap: 10px; }
+.admin-tabs .btn { background: #f4f2e9f2; box-shadow: 0 2px 7px #222c2420; }
+.admin-tabs .btn.primary { background: var(--accent); }
+.panel {
+  background-color: #f5f3ebf7;
+  border-color: #989e8d;
+  border-radius: 2px;
+  box-shadow: 0 5px 18px #26342914,inset 0 0 0 4px #e5e4d83d;
+}
+.panel h3 { display: flex; align-items: center; gap: 10px; color: #2e3d30; }
+.hj-banner {
+  overflow: hidden;
+  border: 1px solid #818b77;
+  border-top: 4px double #58644d;
+  padding: 36px 32px 28px;
+  background-color: #e9e9de;
+  background-image: linear-gradient(90deg,#f5f3ebee 0%,#f5f3ebdb 38%,#f5f3eb94 70%,#f5f3eb18),var(--landscape);
+  background-size: cover;
+  background-position: center 66%;
+}
+.hj-banner h2 { color: #243329; text-shadow: 0 1px 6px #faf8ec; margin: 26px 0 12px; letter-spacing: .025em; }
+.hj-banner > p { color: #434f40; }
+.hj-banner .month-pill { border-color: #65705b; background: #f2f0e2d9; color: #3d4939; }
+.hj-banner .hj-stats { margin-top: 38px; }
+.hj-stats > div { background: #faf8eff0; border-color: #acb09e; box-shadow: inset 0 3px 0 #75826433; border-radius: 1px; }
+.hj-stats small,.hj-stats span { color: #55634f; }
+.hj-stats strong { color: #293c2e; }
+.auth-card {
+  width: min(440px,100%);
+  padding: 38px 34px 28px;
+  background-color: #f6f4eaf5;
+  border: 1px solid #858d7b;
+  border-top: 5px double #4f5d48;
+  border-radius: 2px;
+  box-shadow: 5px 5px 0 -1px #e4e5d8,5px 5px 0 0 #818e78,0 18px 60px #1b281e33;
+}
+.auth-card h1 { color: #263a2c; letter-spacing: .18em; }
+.login-chars { color: #52624b; font-size: 34px; border-top: 1px solid #9eaa915c; padding-top: 18px; }
+.auth-card form { margin-top: 20px; }
+.btn { border-color: #a0aa95; border-radius: 2px; background: #edf0e2; color: #303d2f; box-shadow: 0 1px 2px #1f30221c; }
+.btn:hover { background: #dce4d2; border-color: #697b60; }
+.btn.primary { color: #fbf8ec; background: #344435; border-color: #344435; box-shadow: inset 0 0 0 2px #f8f6e91a,0 2px 4px #21331e22; }
+.btn.primary:hover { background: #263929; border-color: #263929; }
+.btn.good { background: #4f6449; border-color: #40563b; }
+.btn.ghost:hover { background: #e2e9d8; }
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible { outline-color: #72452f; }
+input,select { background: #fcfbf2; border-color: #99a28c; border-radius: 2px; }
+input::placeholder { color: #67725e; }
+.month-pill { border-color: #a0aa91; background: #e9eddd; color: #455639; border-radius: 1px; }
+.ink-label { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 28px; height: 28px; border: 1px solid #9b7565; color: #873f31; font-size: 19px; transform: rotate(-3deg); }
+.ink-result-mark { display: inline-flex; align-items: center; justify-content: center; width: 64px; height: 64px; margin: 12px; font-size: 42px; color: #8b4034; border: 4px double currentColor; transform: rotate(-5deg); }
+.hj-focus { border-left: 4px solid #536548; background-color: #f5f4e9; }
+.hj-steps span { background: #edf0e3; border-color: #aab498; color: #56654a; border-radius: 1px; }
+.hj-steps span.on { background: #46593e; border-color: #46593e; color: #fbf9ed; }
+.hj-steps span.done { background: #dce7d0; border-color: #a1b18c; color: #3d5534; }
+.hj-progress { height: 5px; background: #cdd6c0; }
+.hj-progress > i { background: #546b47; }
+.hj-batch,.hj-card { background: #edf0e4; border-color: #a6b298; border-radius: 2px; }
+.hj-words > div { background: #fafbf2; border-color: #c5cebb; border-radius: 1px; }
+.hj-words b em { color: #8f4538; }
+.hj-q .big,.hj-glyph .static { color: #27382b; }
+.hj-opts button { background: #f3f5e9; border-color: #a4b193; color: #2d3c2a; box-shadow: 0 2px 0 #cbd5c0; border-radius: 2px; }
+.hj-opts button:hover { background: #e1e9d7; border-color: #6b805c; }
+.hj-opts button[aria-pressed="true"] { background: #d4e2c7; border-color: #425c34; box-shadow: inset 0 0 0 1px #425c34; }
+.hj-chars div,.hj-chars button { background: #edf2e3; border-color: #bac7ab; }
+.hj-chars button:hover { background: #dce7cf; border-color: #728763; }
+.hj-glyph,.hj-stroke-board { background-color: #fafbf3; border-color: #a7b394; }
+.stroke-grid { stroke: #bfcbb0; }
+.stroke-outline { fill: #d8dfca; }
+.stroke-done { fill: #29382b; }
+.stroke-ink { stroke: #3f5b35; }
+.tbl th { color: #40553a; background: #e4ebd9; }
+.tbl th,.tbl td { border-bottom-color: #c6d0bc; }
+.tbl tbody tr:hover,.hj-me { background: #dce9cf7a; }
+.modal-bg { background: #17251cd6; }
+.modal { background-color: #f5f5e9; border-color: #8b9b7a; border-radius: 2px; }
+#scr-loading p { color: #243b29; padding: 8px 16px; background: #f4f3e8dd; border-radius: 2px; }
+@media(max-width:680px) {
+  body { background-position: 65% center; }
+  .page { padding-top: 20px; }
+  .hj-banner { padding: 26px 18px 20px; background-image: linear-gradient(90deg,#f5f3ebe6,#f5f3ebad),var(--landscape); background-position: 66% center; }
+  .hj-banner h2 { font-size: 1.8rem; }
+  .hj-banner .hj-stats { margin-top: 24px; }
+  .auth-card { padding: 30px 22px 24px; }
+  .admin-tabs { gap: 6px; }
+  .brand { letter-spacing: .04em; }
+}
